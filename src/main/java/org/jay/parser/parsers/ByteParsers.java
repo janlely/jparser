@@ -17,7 +17,7 @@ public class ByteParsers {
                 int pos = context.getPos();
                 byte[] bs = context.readN(data.length);
                 if (!Arrays.equals(data, bs)) {
-                    context.backward(data.length);
+                    context.jump(pos);
                     return Result.builder()
                             .errorMsg(ErrorUtil.error(pos))
                             .build();
@@ -26,6 +26,23 @@ public class ByteParsers {
                         .length(data.length)
                         .result(List.of(data))
                         .build();
+            }
+        };
+    }
+
+    public static Parser skip(int n) {
+        return take(n).ignore();
+    }
+    public static Parser take(int n) {
+        return new Parser() {
+            @Override
+            public Result parse(Context context) {
+                if (context.remaining() < n) {
+                    return Result.builder()
+                            .errorMsg("Not enough bytes to take")
+                            .build();
+                }
+                return Result.builder().result(List.of(context.readN(n))).build();
             }
         };
     }

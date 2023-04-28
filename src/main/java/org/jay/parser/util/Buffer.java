@@ -32,7 +32,11 @@ public class Buffer {
         return result;
     }
 
-    public String remaining() {
-        return new String(data, pos, data.length - pos);
+    public int remaining() {
+        return data.length - pos;
+    }
+
+    public void jump(int pos) {
+        this.pos = pos;
     }
 }

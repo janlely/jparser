@@ -18,6 +18,7 @@ public class StringParsers {
         return new Parser() {
             @Override
             public Result parse(Context context) {
+                int pos = context.getPos();
                 byte[] bs = s.getBytes(charset);
                 byte[] bytes = context.readN(bs.length);
                 if (Arrays.equals(bs, bytes)) {
@@ -25,8 +26,10 @@ public class StringParsers {
                             .length(bs.length)
                             .result(List.of(s)).build();
                 }
+                int curPos = context.getPos();
+                context.jump(pos);
                 return Result.builder()
-                        .errorMsg("Unexpected character at: " + context.getPos() + ". expect: " + s)
+                        .errorMsg("Unexpected character at: " + curPos + ". expect: " + s)
                         .build();
             }
         };

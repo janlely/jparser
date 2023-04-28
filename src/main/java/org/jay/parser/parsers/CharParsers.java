@@ -5,6 +5,7 @@ import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.util.AnyChar;
 import org.jay.parser.util.CharUtil;
+import org.jay.parser.util.ErrorUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -21,17 +22,17 @@ public class CharParsers {
         return new Parser() {
             @Override
             public Result parse(Context context) {
+                int pos = context.getPos();
                 byte[] encoded = ch.getCharacter();
-                if (Arrays.equals(encoded, context.readN(encoded.length))) {
+                byte[] bytes = context.readN(encoded.length);
+                if (Arrays.equals(encoded, bytes)) {
                     return Result.builder()
                             .length(encoded.length)
                             .result(List.of(ch)).build();
                 }
-                return Result.builder().errorMsg("Unexpected character at: " + context.getPos()).build();
-            }
-            @Override
-            public boolean isIgnore() {
-                return true;
+                int curPos = context.getPos();
+                context.jump(pos);
+                return Result.builder().errorMsg("Unexpected character at: " + curPos).build();
             }
         };
     }
@@ -44,14 +45,18 @@ public class CharParsers {
         return new Parser() {
             @Override
             public Result parse(Context context) {
+                int pos = context.getPos();
                 try {
                     int maxLen = Math.round(charset.newEncoder().maxBytesPerChar());
-                    AnyChar ch = CharUtil.read(context.readN(maxLen), charset);
+                    byte[] bytes = context.readN(maxLen);
+                    AnyChar ch = CharUtil.read(bytes, charset);
                     return Result.builder()
                             .length(CharUtil.length(ch))
                             .result(List.of(ch)).build();
                 } catch (CharacterCodingException e) {
-                    return Result.builder().errorMsg("Unexpected character at: " + context.getPos()).build();
+                    int curPos = context.getPos();
+                    context.jump(pos);
+                    return Result.builder().errorMsg("Unexpected character at: " + curPos).build();
                 }
             }
         };
@@ -79,7 +84,9 @@ public class CharParsers {
                             .length(len)
                             .result(List.of(new String(context.copyOf(pos,len), charset))).build();
                 } catch (CharacterCodingException e) {
-                    return Result.builder().errorMsg("Unexpected character at: " + context.getPos()).build();
+                    int curPos = context.getPos();
+                    context.jump(pos);
+                    return Result.builder().errorMsg("Unexpected character at: " + curPos).build();
                 }
             }
         };
@@ -101,7 +108,46 @@ public class CharParsers {
                             .length(len)
                             .result(List.of(new String(context.copyOf(pos,len), charset))).build();
                 } catch (CharacterCodingException e) {
-                    return Result.builder().errorMsg("Unexpected character at: " + context.getPos()).build();
+                    int curPos = context.getPos();
+                    context.jump(pos);
+                    return Result.builder().errorMsg("Unexpected character at: " + curPos).build();
+                }
+            }
+        };
+    }
+
+    public static Parser skip(int n, Charset charset) {
+        return take(n, charset).ignore();
+    }
+
+    public static Parser take(int n, Charset charset) {
+        return new Parser() {
+            @Override
+            public Result parse(Context context) {
+                int pos = context.getPos();
+                int maxLen = context.remaining() >= CharUtil.CHAR_MAN_LENGTH * n ? CharUtil.CHAR_MAN_LENGTH * n : context.remaining();
+                try {
+                    List<AnyChar> result = CharUtil.readN(context.readN(maxLen), n, charset);
+                    Integer len = result.stream().map(AnyChar::getCharacter).map(c -> c.length).reduce(0, Integer::sum);
+                    if (result.size() == n) {
+                        byte[] bytes = new byte[len];
+                        int i = 0;
+                        for (AnyChar anyChar : result) {
+                            System.arraycopy(anyChar.getCharacter(), 0, bytes, i, anyChar.getCharacter().length);
+                            i += anyChar.getCharacter().length;
+                        }
+                        context.jump(pos + len);
+                        return Result.builder()
+                                .length(len)
+                                .result(List.of(new String(bytes, charset))).build();
+                    }
+                    context.jump(pos);
+                    return Result.builder()
+                            .errorMsg(ErrorUtil.error(pos + len))
+                            .build();
+                } catch (CharacterCodingException e) {
+                    context.jump(pos);
+                    throw new RuntimeException(e);
                 }
             }
         };

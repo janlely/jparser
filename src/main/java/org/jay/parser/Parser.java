@@ -6,10 +6,11 @@ import org.jay.parser.util.Separator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public abstract class Parser {
-    private boolean ignore = false;
+    protected boolean ignore = false;
     public Result runParser(Context context) {
         Result result = parse(context);
         if (result.result == null) {
@@ -52,30 +53,13 @@ public abstract class Parser {
                 if (result.result != null && p.test(result.result)) {
                     return result;
                 }
+                context.jump(pos);
                 return Result.builder()
                         .errorMsg(ErrorUtil.error(pos))
                         .build();
             }
         };
     }
-
-    public Parser pack(Constructor constructor) {
-        return new Parser() {
-            @Override
-            public Result parse(Context context) {
-                Result result = Parser.this.runParser(context);
-                if (result.result == null) {
-                    return result;
-                }
-                try {
-                    return Result.builder().result(List.of(constructor.construct(result.result))).build();
-                } catch (Exception e) {
-                    return Result.builder().errorMsg("wrong constructor: " + constructor.getDesc()).build();
-                }
-            }
-        };
-    }
-
 
     public Parser some() {
         return new Parser() {
@@ -102,6 +86,7 @@ public abstract class Parser {
         return new Parser() {
             @Override
             public Result parse(Context context) {
+                int pos = context.getPos();
                 Result result = Result.builder().result(new ArrayList(0)).length(0).build();
                 Result first = Parser.this.runParser(context);
                 if (first.result == null) {
@@ -141,8 +126,22 @@ public abstract class Parser {
         };
     }
 
-    public Parser sepBy(Separator sep) {
-        return connect(ByteParsers.bytes(sep.getData()).ignore().connect(this).many());
+    public Parser map(Function<List, ?> mapper) {
+        return new Parser() {
+            @Override
+            public Result parse(Context context) {
+                Result result = Parser.this.parse(context);
+                if (result.result == null) {
+                    return result;
+                }
+                result.result = List.of(mapper.apply(result.result));
+                return result;
+            }
+        };
+    }
+
+    public Parser sepBy(Parser parser) {
+        return connect(parser.connect(this).many());
     }
     public boolean isIgnore() {
         return this.ignore;

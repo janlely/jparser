@@ -1,10 +1,12 @@
 package com.jay.parser;
 
-import org.jay.parser.Constructor;
+import org.jay.parser.Combinator;
 import org.jay.parser.Context;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.parsers.CharParsers;
+import org.jay.parser.parsers.NumberParsers;
+import org.jay.parser.parsers.StringParsers;
 import org.jay.parser.util.AnyChar;
 import org.jay.parser.util.Buffer;
 import org.jay.parser.util.CharUtil;
@@ -33,31 +35,49 @@ public class CommonTest {
 
 
     @Test
+    public void testSkipChar() throws CharacterCodingException {
+//        ByteBuffer bf = ByteBuffer.wrap("需要注意的是，如果使用".getBytes());
+//        CoderResult result = StandardCharsets.UTF_8.newDecoder().decode(bf, CharBuffer.allocate(1), true);
+//        while (!result.isError()) {
+//            System.out.println(bf.remaining());
+//            result = StandardCharsets.UTF_8.newDecoder().decode(bf, CharBuffer.allocate(1), true);
+//        }
+//        System.out.println("hello");
+        List<AnyChar> result = CharUtil.readN("字符或字节".getBytes(), 6, StandardCharsets.UTF_8);
+        System.out.println("sdfsd");
+    }
+
+    @Test
     public void testParser() {
         Parser wordParser = CharParsers.satisfy(c -> c >= 'A' && c <= 'z');
-        Result result = wordParser.sepBy(Separator.character(','))
-                .pack(new Constructor() {
-                    @Override
-                    public Object construct(List args) {
-                        return Sample.builder()
-                                .a((String) args.get(0))
-                                .b((String) args.get(1))
-                                .c((String) args.get(2))
-                                .d((String) args.get(3))
-                                .e((String) args.get(4))
-                                .build();
-                    }
-                    @Override
-                    public String getDesc() {
-                        return "pack csv to Java Object";
-                    }
-                })
-                .runParser(Context.builder()
+        Parser sampleParser = wordParser.sepBy(Separator.character(',')).map(args ->
+                Sample.builder()
+                        .a((String) args.get(0))
+                        .b((String) args.get(1))
+                        .c((String) args.get(2))
+                        .d((String) args.get(3))
+                        .e((String) args.get(4))
+                        .build());
+        Parser csvFileParser = sampleParser.sepBy(Separator.character('\n'));
+        Result result = csvFileParser.runParser(Context.builder()
                 .buffer(Buffer.builder()
                         .pos(0)
-                        .data("hello,world,abc,dfe,asdfasdf".getBytes())
+                        .data("hello,world,abc,dfe,asdfasdf\nhello,world,abc,dfe,asdfasdf".getBytes())
                         .build())
                 .build());
         System.out.println(result.getResult().get(0));
+    }
+
+    @Test
+    public void testChoose() {
+        Parser numberParser = NumberParsers.intStr(100);
+        Parser stringParser = StringParsers.string("hello");
+        Result result = Combinator.choose(numberParser, stringParser)
+                .runParser(Context.builder()
+                        .buffer(Buffer.builder()
+                                .data("hello100hello".getBytes())
+                                .build())
+                        .build());
+        System.out.println("hello");
     }
 }

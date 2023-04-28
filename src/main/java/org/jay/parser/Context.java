@@ -24,4 +24,12 @@ public class Context {
     public byte[] copyOf(int pos, int length) {
         return buffer.copyOf(pos, length);
     }
+
+    public void jump(int pos) {
+        buffer.jump(pos);
+    }
+
+    public int remaining() {
+        return buffer.remaining();
+    }
 }
