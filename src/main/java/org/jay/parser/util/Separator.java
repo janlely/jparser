@@ -1,9 +1,7 @@
 package org.jay.parser.util;
 
 import lombok.Getter;
-import org.jay.parser.Context;
 import org.jay.parser.Parser;
-import org.jay.parser.Result;
 import org.jay.parser.parsers.ByteParsers;
 
 public class Separator {

@@ -4,16 +4,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.jay.parser.Context;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
-import org.jay.parser.util.AnyChar;
-import org.jay.parser.util.CharUtil;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
 
 public class StringParsers {
 

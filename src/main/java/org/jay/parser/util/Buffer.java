@@ -3,8 +3,6 @@ package org.jay.parser.util;
 import lombok.Builder;
 import lombok.Getter;
 
-import javax.swing.plaf.synth.SynthLookAndFeel;
-
 @Builder
 public class Buffer {
     private byte[] data;

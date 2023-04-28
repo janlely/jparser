@@ -5,7 +5,6 @@ import org.jay.parser.Context;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.parsers.CharParsers;
-import org.jay.parser.parsers.NumberParsers;
 import org.jay.parser.parsers.StringParsers;
 import org.jay.parser.util.AnyChar;
 import org.jay.parser.util.Mapper;
@@ -86,6 +85,20 @@ public class JsonParser extends Parser{
 
     }
 
+    public static Parser boolParser() {
+        Parser trueValue = StringParsers.string("true", true).map(__ ->
+                JsonValue.builder()
+                        .type(JsonType.NULL)
+                        .value(true)
+                        .build());
+        Parser falseValue = StringParsers.string("false", true).map(__ ->
+                JsonValue.builder()
+                        .type(JsonType.NULL)
+                        .value(false)
+                        .build());
+        return Combinator.choose(trueValue, falseValue);
+    }
+
     public static Parser valueParser() {
         return new Parser() {
             @Override
@@ -96,16 +109,21 @@ public class JsonParser extends Parser{
                         return stringParser().map(s -> JsonValue.builder()
                                 .type(JsonType.STRING)
                                 .value(s.get(0))
-                                .build()).runParser(context);
+                                .build()).trim().runParser(context);
                     case '{' :
-                        return objectParser().runParser(context);
+                        return objectParser().trim().runParser(context);
                     case '[' :
-                        return arrayParser().runParser(context);
+                        return arrayParser().trim().runParser(context);
                     case 'n' :
                     case 'N' :
-                        return nullParser().runParser(context);
+                        return nullParser().trim().runParser(context);
+                    case 't':
+                    case 'T':
+                    case 'f':
+                    case 'F':
+                        return boolParser().trim().runParser(context);
                     default:
-                        return numberParser().runParser(context);
+                        return numberParser().trim().runParser(context);
                 }
             }
         };

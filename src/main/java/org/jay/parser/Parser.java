@@ -1,9 +1,7 @@
 package org.jay.parser;
 
-import org.jay.parser.parsers.ByteParsers;
 import org.jay.parser.parsers.CharParsers;
 import org.jay.parser.util.ErrorUtil;
-import org.jay.parser.util.Separator;
 
 import java.util.ArrayList;
 import java.util.List;
