@@ -1,6 +1,7 @@
 package org.jay.parser;
 
 import org.jay.parser.parsers.ByteParsers;
+import org.jay.parser.parsers.CharParsers;
 import org.jay.parser.util.ErrorUtil;
 import org.jay.parser.util.Separator;
 
@@ -86,11 +87,10 @@ public abstract class Parser {
         return new Parser() {
             @Override
             public Result parse(Context context) {
-                int pos = context.getPos();
                 Result result = Result.builder().result(new ArrayList(0)).length(0).build();
                 Result first = Parser.this.runParser(context);
                 if (first.result == null) {
-                    return Result.builder().errorMsg(first.errorMsg).build();
+                    return result;
                 }
                 result.length += first.length;
                 result.result.addAll(first.result);
@@ -138,6 +138,11 @@ public abstract class Parser {
                 return result;
             }
         };
+    }
+
+    public Parser trim() {
+        Parser spaces = CharParsers.space().many();
+        return spaces.connect(this).connect(spaces);
     }
 
     public Parser sepBy(Parser parser) {

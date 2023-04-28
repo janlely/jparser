@@ -3,6 +3,8 @@ package org.jay.parser.util;
 import lombok.Builder;
 import lombok.Getter;
 
+import javax.swing.plaf.synth.SynthLookAndFeel;
+
 @Builder
 public class Buffer {
     private byte[] data;
@@ -38,5 +40,15 @@ public class Buffer {
 
     public void jump(int pos) {
         this.pos = pos;
+    }
+
+    public char head() {
+        return (char) this.data[this.pos];
+    }
+
+    public byte[] content() {
+        byte[] bytes = new byte[data.length - pos];
+        System.arraycopy(data, pos, bytes, 0, bytes.length);
+        return bytes;
     }
 }

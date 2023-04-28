@@ -20,6 +20,10 @@ import java.util.function.Predicate;
 public class CharParsers {
 
 
+    public static Parser space() {
+        return satisfy(c -> Character.isWhitespace(c)).ignore();
+    }
+
     public static Parser character(AnyChar ch) {
         return new Parser() {
             @Override
@@ -74,14 +78,18 @@ public class CharParsers {
                 try {
                     byte[] bytes = context.readN(CharUtil.CHAR_MAN_LENGTH);
                     AnyChar ch = CharUtil.read(bytes, charset);
-                    if(!ch.isEmpty() && cond.test(charset.decode(ByteBuffer.wrap(ch.getCharacter())).charAt(0))) {
-                        int len = ch.getCharacter().length;
-                        context.backward(bytes.length - len);
-                        return Result.builder()
-                                .length(len)
-                                .result(List.of(new String(context.copyOf(pos,len), charset))).build();
+                    if (!ch.isEmpty()) {
+                        char c = charset.decode(ByteBuffer.wrap(ch.getCharacter())).charAt(0);
+                        if(!ch.isEmpty() && cond.test(c)) {
+                            int len = ch.getCharacter().length;
+                            context.backward(bytes.length - len);
+                            return Result.builder()
+                                    .length(len)
+                                    .result(List.of(c)).build();
+                        }
                     }
                 } catch (CharacterCodingException e) {
+                    //Do Nothing
                 }
                 int curPos = context.getPos();
                 context.jump(pos);
@@ -95,21 +103,21 @@ public class CharParsers {
             public Result parse(Context context) {
                 int pos = context.getPos();
                 try {
-                    AnyChar ch = CharUtil.read(context.readN(CharUtil.CHAR_MAN_LENGTH), charset);
-                    while(cond.test(ch)) {
-                        context.backward(CharUtil.CHAR_MAN_LENGTH - CharUtil.length(ch));
-                        ch = CharUtil.read(context.readN(4), charset);
+                    byte[] bytes = context.readN(CharUtil.CHAR_MAN_LENGTH);
+                    AnyChar ch = CharUtil.read(bytes, charset);
+                    if (!ch.isEmpty() && cond.test(ch)) {
+                        int len = ch.getCharacter().length;
+                        context.backward(bytes.length - len);
+                        return Result.builder()
+                                .length(len)
+                                .result(List.of(new String(context.copyOf(pos,len), charset))).build();
                     }
-                    context.backward(CharUtil.CHAR_MAN_LENGTH);
-                    int len = context.getPos() - pos;
-                    return Result.builder()
-                            .length(len)
-                            .result(List.of(new String(context.copyOf(pos,len), charset))).build();
                 } catch (CharacterCodingException e) {
-                    int curPos = context.getPos();
-                    context.jump(pos);
-                    return Result.builder().errorMsg("Unexpected character at: " + curPos).build();
+                    //Do Nothing
                 }
+                int curPos = context.getPos();
+                context.jump(pos);
+                return Result.builder().errorMsg("Unexpected character at: " + curPos).build();
             }
         };
     }

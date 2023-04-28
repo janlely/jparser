@@ -4,12 +4,14 @@ import org.jay.parser.Combinator;
 import org.jay.parser.Context;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
+import org.jay.parser.impl.json.JsonParser;
 import org.jay.parser.parsers.CharParsers;
 import org.jay.parser.parsers.NumberParsers;
 import org.jay.parser.parsers.StringParsers;
 import org.jay.parser.util.AnyChar;
 import org.jay.parser.util.Buffer;
 import org.jay.parser.util.CharUtil;
+import org.jay.parser.util.Mapper;
 import org.jay.parser.util.Separator;
 import org.junit.Test;
 
@@ -49,7 +51,7 @@ public class CommonTest {
 
     @Test
     public void testParser() {
-        Parser wordParser = CharParsers.satisfy(c -> c >= 'A' && c <= 'z');
+        Parser wordParser = CharParsers.satisfy(c -> c >= 'A' && c <= 'z').many().map(Mapper.toStr());
         Parser sampleParser = wordParser.sepBy(Separator.character(',')).map(args ->
                 Sample.builder()
                         .a((String) args.get(0))
@@ -78,6 +80,17 @@ public class CommonTest {
                                 .data("hello100hello".getBytes())
                                 .build())
                         .build());
+        System.out.println("hello");
+    }
+
+    @Test
+    public void testJson() {
+        String jsonStr = "  {\"hello\":\"world\",\"array\":[\"a\",{\"b\":\"c\"},null,123.4],\"name\":\"jay\"}  ";
+        Result result = new JsonParser().runParser(Context.builder()
+                .buffer(Buffer.builder()
+                        .data(jsonStr.getBytes())
+                        .build())
+                .build());
         System.out.println("hello");
     }
 }

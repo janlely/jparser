@@ -15,7 +15,7 @@ public class AnyChar {
 
     public static AnyChar fromAscii(char ch) {
         return AnyChar.builder()
-                .character(StandardCharsets.US_ASCII.encode(String.valueOf(ch)).array())
+                .character(String.valueOf(ch).getBytes())
                 .charset(StandardCharsets.US_ASCII)
                 .build();
     }

@@ -29,7 +29,15 @@ public class Context {
         buffer.jump(pos);
     }
 
+    public char head() {
+        return buffer.head();
+    }
+
     public int remaining() {
         return buffer.remaining();
+    }
+
+    public String debug() {
+        return new String(buffer.content());
     }
 }

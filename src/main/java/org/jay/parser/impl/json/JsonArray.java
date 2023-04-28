@@ -9,4 +9,9 @@ public class JsonArray {
     public JsonArray() {
         this.array = new ArrayList<>();
     }
+
+    public JsonArray addAll(List<JsonValue> values) {
+        this.array.addAll(values);
+        return this;
+    }
 }
