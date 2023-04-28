@@ -4,12 +4,21 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.StringTokenizer;
 
 @Data
 @Builder
 public class AnyChar {
     private byte[] character;
     private Charset charset;
+
+    public static AnyChar fromAscii(char ch) {
+        return AnyChar.builder()
+                .character(StandardCharsets.US_ASCII.encode(String.valueOf(ch)).array())
+                .charset(StandardCharsets.US_ASCII)
+                .build();
+    }
 
     public static AnyChar from(char ch, Charset charset) {
         return AnyChar.builder()

@@ -11,7 +11,7 @@ import java.util.List;
 public class NumberParsers {
 
     public static Parser intStr(int a) {
-        return StringParsers.string(String.valueOf(a)).map(__ -> List.of(a));
+        return StringParsers.string(String.valueOf(a)).map(__ -> a);
     }
     public static Parser anyLongBE() {
         return new Parser() {
