@@ -44,7 +44,7 @@ public class Result {
     }
 
     public boolean isEmpty() {
-        return this.result.isEmpty();
+        return this.result == null || this.result.isEmpty();
     }
 
     public void incLen(int n) {

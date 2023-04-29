@@ -102,13 +102,13 @@ public abstract class Parser {
      * @param p
      * @return
      */
-    public Parser must(Predicate p) {
+    public Parser must(Predicate<Result> p) {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
                 int pos = buffer.getPos();
                 Result result = Parser.this.runParser(buffer);
-                if (result.isSuccess() && p.test(result.getResult())) {
+                if (result.isSuccess() && p.test(result)) {
                     return result;
                 }
                 buffer.jump(pos);
@@ -160,8 +160,14 @@ public abstract class Parser {
      * @return
      */
     public Parser range(int from, int end) {
-        return repeat(from).attempt(end - from);
+        return repeat(from).connect(() -> attempt(end - from));
     }
+
+    /**
+     * Perform at most n times
+     * @param n
+     * @return
+     */
     public Parser attempt(int n) {
         return new Parser() {
             @Override
@@ -173,7 +179,7 @@ public abstract class Parser {
                 for (int i = 0; i < n; i++) {
                     Result tmp = Parser.this.runParser(buffer);
                     if (tmp.isError()) {
-                        return result;
+                        break;
                     }
                     result.length += tmp.length;
                     result.addAll(tmp.getResult());
@@ -192,9 +198,9 @@ public abstract class Parser {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
-                Result result = Result.builder().result(new ArrayList(1)).length(0).build();
+                Result result = Result.empty();
                 if (n <= 0) {
-                    return Result.builder().length(0).result(new ArrayList(0)).build();
+                    return result;
                 }
                 for(int i = 0; i < n; i++) {
                     Result tmp = Parser.this.runParser(buffer);
@@ -270,17 +276,12 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * make this Parser optional
+     * @return
+     */
     public Parser optional() {
-        return new Parser() {
-            @Override
-            public Result parse(Buffer buffer) {
-                Result result = Parser.this.runParser(buffer);
-                if (result.isError()) {
-                    return Result.empty();
-                }
-                return result;
-            }
-        };
+        return attempt(1);
     }
 
 }
