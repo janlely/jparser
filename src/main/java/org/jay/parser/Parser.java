@@ -235,6 +235,11 @@ public abstract class Parser {
         return connect(parser.connect(this).many());
     }
 
+    /**
+     * Same as Combinater.choose
+     * @param parser
+     * @return
+     */
     public Parser or(Parser parser) {
         return new Parser() {
             @Override
