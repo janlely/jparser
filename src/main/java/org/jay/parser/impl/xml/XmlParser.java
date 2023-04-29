@@ -17,16 +17,28 @@ public class XmlParser extends Parser {
         return nodeParser().connect(() -> TextParsers.eof()).runParser(buffer);
     }
 
+    /**
+     * Parse XmlNode
+     * @return
+     */
     public Parser nodeParser() {
         return emptyParser().or(() -> fullParser()).trim();
     }
 
+    /**
+     * Parse content: <tag> ${content} </tag>
+     * @return
+     */
     public Parser contentParser() {
         return contentEscapeParser().or(() ->
                 TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '<' && c != '>').trim()
         ).many().map(Mapper.toStr());
     }
 
+    /**
+     * Parse a full xml: <tag> content or children node </tag>
+     * @return
+     */
     public Parser fullParser() {
         return headParser()
                 .connect(() -> nodeParser().some().or(() -> contentParser()))
@@ -52,6 +64,10 @@ public class XmlParser extends Parser {
     }
 
 
+    /**
+     * Parse head: <name prop="value">
+     * @return
+     */
     public Parser headParser() {
         return TextParsers.one('<').ignore()
                 .connect(() -> tagParser())
@@ -67,6 +83,10 @@ public class XmlParser extends Parser {
     }
 
 
+    /**
+     * Parse empty tag: <name prop="value" />
+     * @return
+     */
     public Parser emptyParser() {
         return TextParsers.one('<').ignore()
                 .connect(() -> tagParser())
@@ -81,24 +101,29 @@ public class XmlParser extends Parser {
                 });
     }
 
+    /**
+     * Parse tag: use by headParser and emptyParser
+     * @return
+     */
     public Parser tagParser() {
         return nameParser()
                 .connect(() -> TextParsers.blank())
                 .connect(() -> propParser().sepBy(TextParsers.blank()).optional());
     }
 
-    public Parser tailParser(String name) {
-        return TextParsers.string("</").ignore()
-                .connect(() -> TextParsers.string(name).trim())
-                .connect(() -> TextParsers.string(">").ignore())
-                .ignore();
-    }
-
+    /**
+     * Parse tag name or prop name
+     * @return
+     */
     public Parser nameParser() {
         return TextParsers.satisfy(validName())
                 .some().map(Mapper.toStr());
     }
 
+    /**
+     * Parse XmlProp
+     * @return
+     */
     public Parser propParser() {
         return nameParser()
                 .trim()
@@ -107,6 +132,10 @@ public class XmlParser extends Parser {
                 .map(kv -> XmlProp.builder().name((String) kv.get(0)).value((String) kv.get(1)).build());
     }
 
+    /**
+     * Parse prop value
+     * @return
+     */
     public Parser propValueParser() {
         Parser singleQuote = TextParsers.one('\'').ignore()
                 .connect(() -> valueEscapeParser().or(() ->
@@ -121,15 +150,28 @@ public class XmlParser extends Parser {
         return singleQuote.or(() -> doubleQuote);
     }
 
+    /**
+     * Parse escape character in prop value
+     * @return
+     */
     public Parser valueEscapeParser() {
         //TODO more escape char to be added
         return TextParsers.string(" &quot").map(Mapper.replace('"'));
     }
 
+    /**
+     * Parse escape character in content
+     * @return
+     */
     public Parser contentEscapeParser() {
         return TextParsers.string("&lt;").map(Mapper.replace('<')).or(() ->
                 TextParsers.string("&gt;").map(Mapper.replace('<')));
     }
+
+    /**
+     * Check if a character is allowed in XML tag names
+     * @return
+     */
     public Predicate<Character> validName() {
         return c -> Character.isLetterOrDigit(c)
                 || Set.of('.','-','_',':').contains(c);

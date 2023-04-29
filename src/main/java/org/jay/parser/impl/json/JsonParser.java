@@ -22,7 +22,7 @@ public class JsonParser extends Parser{
      * parse json array
      * @return
      */
-    public static Parser arrayParser() {
+    public Parser arrayParser() {
         return TextParsers.one('[').ignore()
                 .connect(() -> valueParser().sepBy(TextParsers.one(',').ignore()))
                 .connect(() -> TextParsers.one(']').ignore())
@@ -36,7 +36,7 @@ public class JsonParser extends Parser{
      * parse json object
      * @return
      */
-    public static Parser objectParser() {
+    public Parser objectParser() {
         Parser members = member().sepBy(TextParsers.one(',').ignore())
                 .map(mbs -> JsonValue.builder()
                         .type(JsonType.OBJECT)
@@ -51,7 +51,7 @@ public class JsonParser extends Parser{
      * parse member of json object
      * @return
      */
-    public static Parser member() {
+    public Parser member() {
         return stringParser().trim()
                 .connect(() -> TextParsers.one(':').ignore())
                 .connect(() -> valueParser())
@@ -65,7 +65,7 @@ public class JsonParser extends Parser{
      * parse json string
      * @return
      */
-    public static Parser stringParser() {
+    public Parser stringParser() {
         Parser escape = TextParsers.one('\\').ignore()
                 .connect(() -> TextParsers.one('"')
                         .or(() -> TextParsers.one('\\')));
@@ -81,7 +81,7 @@ public class JsonParser extends Parser{
      * parse json null
      * @return
      */
-    public static Parser nullParser() {
+    public Parser nullParser() {
         return TextParsers.string("null", true).map(__ ->
                 JsonValue.builder()
                         .type(JsonType.NULL)
@@ -93,7 +93,7 @@ public class JsonParser extends Parser{
      * parse json number
      * @return
      */
-    public static Parser numberParser() {
+    public Parser numberParser() {
         return TextParsers.satisfy(c -> Character.isDigit(c) || c == '-' || c == '.' || c == 'e')
                 .many()
                 .map(Mapper.toStr())
@@ -108,7 +108,7 @@ public class JsonParser extends Parser{
      * parse json bool
      * @return
      */
-    public static Parser boolParser() {
+    public Parser boolParser() {
         Parser trueValue = TextParsers.string("true", true).map(__ ->
                 JsonValue.builder()
                         .type(JsonType.BOOL)
@@ -126,7 +126,7 @@ public class JsonParser extends Parser{
      * core json parser
      * @return
      */
-    public static Parser valueParser() {
+    public Parser valueParser() {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {

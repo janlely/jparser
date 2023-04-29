@@ -8,14 +8,14 @@ import org.jay.parser.util.Mapper;
 
 public class CsvParser {
 
-    public static Parser fileParser() {
+    public Parser fileParser() {
         return lineParser().sepBy(TextParsers.one('\n').ignore());
     }
-    public static Parser lineParser() {
+    public Parser lineParser() {
         return fieldParser().sepBy(TextParsers.one(',').ignore()).many();
     }
 
-    public static Parser fieldParser() {
+    public Parser fieldParser() {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
