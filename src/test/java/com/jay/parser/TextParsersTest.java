@@ -129,7 +129,7 @@ public class TextParsersTest {
         Result result1 = TextParsers.white().runParser(Buffer.builder()
                 .data(" abdf".getBytes())
                 .build());
-        Result result2 = TextParsers.blank().connect(TextParsers.string("hello"))
+        Result result2 = TextParsers.blank().connect(() -> TextParsers.string("hello"))
                 .runParser(Buffer.builder()
                         .data("    hello".getBytes())
                         .build());

@@ -51,8 +51,7 @@ public class TextParsers {
      */
     public static Parser one(char ch, boolean ignoreCase) {
         if (ignoreCase) {
-            return Combinator.choose(
-                    one(Character.toLowerCase(ch), StandardCharsets.UTF_8),
+            return one(Character.toLowerCase(ch), StandardCharsets.UTF_8).or(() ->
                     one(Character.toUpperCase(ch), StandardCharsets.UTF_8)
             ).map(Mapper.replace(ch));
         }
@@ -132,7 +131,8 @@ public class TextParsers {
         }
         Parser result = empty();
         for(int i = 0; i < value.length(); i++) {
-            result = result.connect(one(value.charAt(i), true));
+            int idx = i;
+            result = result.connect(() -> one(value.charAt(idx), true));
         }
         return result.map(Mapper.replace(value));
     }
@@ -146,7 +146,8 @@ public class TextParsers {
     public static Parser string(String value, Charset charset) {
         Parser result = empty();
         for(int i = 0; i < value.length(); i++) {
-            result = result.connect(one(value.charAt(i), charset));
+            int idx = i;
+            result = result.connect(() -> one(value.charAt(idx), charset));
         }
         return result.map(Mapper.toStr());
     }

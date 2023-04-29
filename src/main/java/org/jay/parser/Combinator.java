@@ -9,25 +9,25 @@ public class Combinator {
      * @param others
      * @return
      */
-    public static Parser choose(Parser parser, Parser ...others) {
-
-        return new Parser() {
-            @Override
-            public Result parse(Buffer buffer) {
-                Result result = parser.parse(buffer);
-                if (result.isSuccess()) {
-                    return result;
-                }
-                for (Parser other : others) {
-                    Result tmp = other.parse(buffer);
-                    if (tmp.isSuccess()) {
-                        return tmp;
-                    }
-                }
-                return Result.builder()
-                        .errorMsg("No suitable Parser to choose")
-                        .build();
-            }
-        };
-    }
+//    public static Parser choose(Parser parser, Parser ...others) {
+//
+//        return new Parser() {
+//            @Override
+//            public Result parse(Buffer buffer) {
+//                Result result = parser.parse(buffer);
+//                if (result.isSuccess()) {
+//                    return result;
+//                }
+//                for (Parser other : others) {
+//                    Result tmp = other.parse(buffer);
+//                    if (tmp.isSuccess()) {
+//                        return tmp;
+//                    }
+//                }
+//                return Result.builder()
+//                        .errorMsg("No suitable Parser to choose")
+//                        .build();
+//            }
+//        };
+//    }
 }

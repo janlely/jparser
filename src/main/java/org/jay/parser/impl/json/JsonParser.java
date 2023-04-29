@@ -14,7 +14,7 @@ public class JsonParser extends Parser{
     @Override
     public Result parse(Buffer buffer) {
         Result result = valueParser().trim()
-                .connect(TextParsers.eof())
+                .connect(() -> TextParsers.eof())
                 .parse(buffer);
         return result;
     }
@@ -25,8 +25,8 @@ public class JsonParser extends Parser{
      */
     public static Parser arrayParser() {
         return TextParsers.one('[').ignore()
-                .connect(valueParser().sepBy(TextParsers.one(',').ignore()))
-                .connect(TextParsers.one(']').ignore())
+                .connect(() -> valueParser().sepBy(TextParsers.one(',').ignore()))
+                .connect(() -> TextParsers.one(']').ignore())
                 .map(ary -> JsonValue.builder()
                         .type(JsonType.ARRAY)
                         .value(new JsonArray().addAll(ary))
@@ -44,8 +44,8 @@ public class JsonParser extends Parser{
                         .value(new JsonObject().addAll(mbs))
                         .build());
         return TextParsers.one('{').ignore()
-                .connect(members)
-                .connect(TextParsers.one('}').ignore());
+                .connect(() -> members)
+                .connect(() -> TextParsers.one('}').ignore());
     }
 
     /**
@@ -54,8 +54,8 @@ public class JsonParser extends Parser{
      */
     public static Parser member() {
         return stringParser().trim()
-                .connect(TextParsers.one(':').ignore())
-                .connect(valueParser())
+                .connect(() -> TextParsers.one(':').ignore())
+                .connect(() -> valueParser())
                 .map((List kv) -> JsonMember.builder()
                         .key((String) kv.get(0))
                         .value((JsonValue) kv.get(1))
@@ -68,15 +68,14 @@ public class JsonParser extends Parser{
      */
     public static Parser stringParser() {
         Parser escape = TextParsers.one('\\').ignore()
-                .connect(TextParsers.one('"')
-                        .or(TextParsers.one('\\')));
-        Parser charParser = Combinator.choose(
-                escape,
+                .connect(() -> TextParsers.one('"')
+                        .or(() -> TextParsers.one('\\')));
+        Parser charParser = escape.or(() ->
                 TextParsers.satisfy(c -> c != '"')
         );
         return TextParsers.one('"').ignore()
-                .connect(charParser.many().map(Mapper.toStr()))
-                .connect(TextParsers.one('"').ignore());
+                .connect(() -> charParser.many().map(Mapper.toStr()))
+                .connect(() -> TextParsers.one('"').ignore());
     }
 
     /**
@@ -121,7 +120,7 @@ public class JsonParser extends Parser{
                         .type(JsonType.BOOL)
                         .value(false)
                         .build());
-        return Combinator.choose(trueValue, falseValue);
+        return trueValue.or(() -> falseValue);
     }
 
     /**

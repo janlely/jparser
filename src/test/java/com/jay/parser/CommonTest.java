@@ -46,7 +46,7 @@ public class CommonTest {
     public void testChoose() {
         Parser numberParser = NumberParsers.intStr(100);
         Parser stringParser = TextParsers.string("hello");
-        Result result = Combinator.choose(numberParser, stringParser)
+        Result result = numberParser.or(() -> stringParser)
                 .runParser(Buffer.builder()
                                 .data("hello100hello".getBytes())
                                 .build());

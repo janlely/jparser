@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * This is the core class of Parser Combinator.
@@ -69,13 +70,34 @@ public abstract class Parser {
         };
     }
 
+//    public Parser connect(Parser parser) {
+//        return new Parser() {
+//            @Override
+//            public Result parse(Buffer buffer) {
+//                Result step1 = Parser.this.runParser(buffer);
+//                if (step1.isError()) {
+//                    return Result.builder().errorMsg(step1.errorMsg).build();
+//                }
+//                Result step2 = parser.runParser(buffer);
+//                if (step2.isError()) {
+//                    buffer.backward(step1.length);
+//                    return Result.builder().errorMsg(step2.errorMsg).build();
+//                }
+//                Result result = Result.builder().result(new ArrayList()).length(0).build();
+//                result.length += step1.length + step2.length;
+//                result.addAll(step1.getResult());
+//                result.addAll(step2.getResult());
+//                return result;
+//            }
+//        };
+//    }
 
     /**
      * Connect with another parser
      * @param parser
      * @return
      */
-    public Parser connect(Parser parser) {
+    public Parser connect(Supplier<Parser> parser) {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
@@ -83,7 +105,7 @@ public abstract class Parser {
                 if (step1.isError()) {
                     return Result.builder().errorMsg(step1.errorMsg).build();
                 }
-                Result step2 = parser.runParser(buffer);
+                Result step2 = parser.get().runParser(buffer);
                 if (step2.isError()) {
                     buffer.backward(step1.length);
                     return Result.builder().errorMsg(step2.errorMsg).build();
@@ -124,7 +146,7 @@ public abstract class Parser {
      * @return
      */
     public Parser some() {
-        return connect(many());
+        return connect(() -> many());
     }
 
     /**
@@ -233,7 +255,7 @@ public abstract class Parser {
      * @return
      */
     public Parser trim() {
-        return TextParsers.blank().connect(this).connect(TextParsers.blank());
+        return TextParsers.blank().connect(() -> this).connect(() -> TextParsers.blank());
     }
 
     /**
@@ -242,15 +264,16 @@ public abstract class Parser {
      * @return
      */
     public Parser sepBy(Parser parser) {
-        return connect(parser.connect(this).many());
+        return connect(() -> parser.connect(() -> this).many());
     }
 
+
     /**
-     * Same as Combinater.choose
+     * Same as Combinater Choose
      * @param parser
      * @return
      */
-    public Parser or(Parser parser) {
+    public Parser or(Supplier<Parser> parser) {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
@@ -258,7 +281,7 @@ public abstract class Parser {
                 if (result.isSuccess()) {
                     return result;
                 }
-                Result result2 = parser.runParser(buffer);
+                Result result2 = parser.get().runParser(buffer);
                 if (result2.isSuccess()) {
                     return result2;
                 }
