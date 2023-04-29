@@ -1,28 +1,25 @@
 package org.jay.parser.impl.json;
 
 import org.jay.parser.Combinator;
-import org.jay.parser.Context;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
-import org.jay.parser.parsers.CharParsers;
-import org.jay.parser.parsers.StringParsers;
-import org.jay.parser.util.AnyChar;
+import org.jay.parser.parsers.TextParsers;
+import org.jay.parser.util.Buffer;
 import org.jay.parser.util.Mapper;
-import org.jay.parser.util.Separator;
 
 import java.util.List;
 
 public class JsonParser extends Parser{
 
     @Override
-    public Result parse(Context context) {
-        return valueParser().trim().parse(context);
+    public Result parse(Buffer buffer) {
+        return valueParser().trim().parse(buffer);
     }
 
     public static Parser arrayParser() {
-        return CharParsers.character(AnyChar.fromAscii('[')).ignore()
-                .connect(valueParser().sepBy(Separator.character(',')))
-                .connect(CharParsers.character(AnyChar.fromAscii(']')).ignore())
+        return TextParsers.one('[').ignore()
+                .connect(valueParser().sepBy(TextParsers.one(',').ignore()))
+                .connect(TextParsers.one(']').ignore())
                 .map(ary -> JsonValue.builder()
                         .type(JsonType.ARRAY)
                         .value(new JsonArray().addAll(ary))
@@ -30,19 +27,19 @@ public class JsonParser extends Parser{
     }
 
     public static Parser objectParser() {
-        Parser members = member().sepBy(Separator.character(','))
+        Parser members = member().sepBy(TextParsers.one(',').ignore())
                 .map(mbs -> JsonValue.builder()
                         .type(JsonType.OBJECT)
                         .value(new JsonObject().addAll(mbs))
                         .build());
-        return CharParsers.character(AnyChar.fromAscii('{')).ignore()
+        return TextParsers.one('{').ignore()
                 .connect(members)
-                .connect(CharParsers.character(AnyChar.fromAscii('}')).ignore());
+                .connect(TextParsers.one('}').ignore());
     }
 
     public static Parser member() {
         return stringParser().trim()
-                .connect(CharParsers.character(AnyChar.fromAscii(':')).ignore())
+                .connect(TextParsers.one(':').ignore())
                 .connect(valueParser())
                 .map((List kv) -> JsonMember.builder()
                         .key((String) kv.get(0))
@@ -51,23 +48,23 @@ public class JsonParser extends Parser{
     }
 
     public static Parser stringParser() {
-        Parser escape = CharParsers.character(AnyChar.fromAscii('\\')).ignore()
+        Parser escape = TextParsers.one('\\').ignore()
                 .connect(Combinator.choose(
-                        CharParsers.character(AnyChar.fromAscii('"')),
-                        CharParsers.character(AnyChar.fromAscii('\\'))
+                        TextParsers.one('"'),
+                        TextParsers.one('\\')
                 ));
         Parser charParser = Combinator.choose(
                 escape,
-                CharParsers.satisfy(c -> c != '"')
+                TextParsers.satisfy(c -> c != '"')
         );
-        return CharParsers.character(AnyChar.fromAscii('"')).ignore()
+        return TextParsers.one('"').ignore()
                 .connect(charParser.many().map(Mapper.toStr()))
-                .connect(CharParsers.character(AnyChar.fromAscii('"')).ignore());
+                .connect(TextParsers.one('"').ignore());
     }
 
 
     public static Parser nullParser() {
-        return StringParsers.string("null", true).map(__ ->
+        return TextParsers.string("null", true).map(__ ->
                 JsonValue.builder()
                         .type(JsonType.NULL)
                         .value("null")
@@ -75,7 +72,7 @@ public class JsonParser extends Parser{
     }
 
     public static Parser numberParser() {
-        return CharParsers.satisfy(c -> Character.isDigit(c) || c == '-' || c == '.' || c == 'e')
+        return TextParsers.satisfy(c -> Character.isDigit(c) || c == '-' || c == '.' || c == 'e')
                 .many()
                 .map(Mapper.toStr())
                 .map(ss -> JsonValue.builder()
@@ -86,12 +83,12 @@ public class JsonParser extends Parser{
     }
 
     public static Parser boolParser() {
-        Parser trueValue = StringParsers.string("true", true).map(__ ->
+        Parser trueValue = TextParsers.string("true", true).map(__ ->
                 JsonValue.builder()
                         .type(JsonType.NULL)
                         .value(true)
                         .build());
-        Parser falseValue = StringParsers.string("false", true).map(__ ->
+        Parser falseValue = TextParsers.string("false", true).map(__ ->
                 JsonValue.builder()
                         .type(JsonType.NULL)
                         .value(false)
@@ -102,28 +99,28 @@ public class JsonParser extends Parser{
     public static Parser valueParser() {
         return new Parser() {
             @Override
-            public Result parse(Context context) {
-                char head = context.head();
+            public Result parse(Buffer buffer) {
+                byte head = buffer.head();
                 switch (head) {
                     case '"' :
                         return stringParser().map(s -> JsonValue.builder()
                                 .type(JsonType.STRING)
                                 .value(s.get(0))
-                                .build()).trim().runParser(context);
+                                .build()).trim().runParser(buffer);
                     case '{' :
-                        return objectParser().trim().runParser(context);
+                        return objectParser().trim().runParser(buffer);
                     case '[' :
-                        return arrayParser().trim().runParser(context);
+                        return arrayParser().trim().runParser(buffer);
                     case 'n' :
                     case 'N' :
-                        return nullParser().trim().runParser(context);
+                        return nullParser().trim().runParser(buffer);
                     case 't':
                     case 'T':
                     case 'f':
                     case 'F':
-                        return boolParser().trim().runParser(context);
+                        return boolParser().trim().runParser(buffer);
                     default:
-                        return numberParser().trim().runParser(context);
+                        return numberParser().trim().runParser(buffer);
                 }
             }
         };

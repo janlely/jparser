@@ -1,18 +1,20 @@
 package org.jay.parser;
 
+import org.jay.parser.util.Buffer;
+
 public class Combinator {
     public static Parser choose(Parser parser, Parser ...others) {
 
         return new Parser() {
             @Override
-            public Result parse(Context context) {
-                Result result = parser.parse(context);
-                if (result.result != null) {
+            public Result parse(Buffer buffer) {
+                Result result = parser.parse(buffer);
+                if (result.isSuccess()) {
                     return result;
                 }
                 for (Parser other : others) {
-                    Result tmp = other.parse(context);
-                    if (tmp.result != null) {
+                    Result tmp = other.parse(buffer);
+                    if (tmp.isSuccess()) {
                         return tmp;
                     }
                 }

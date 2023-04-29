@@ -1,6 +1,7 @@
 package org.jay.parser;
 
-import org.jay.parser.parsers.CharParsers;
+import org.jay.parser.parsers.TextParsers;
+import org.jay.parser.util.Buffer;
 import org.jay.parser.util.ErrorUtil;
 
 import java.util.ArrayList;
@@ -10,34 +11,34 @@ import java.util.function.Predicate;
 
 public abstract class Parser {
     protected boolean ignore = false;
-    public Result runParser(Context context) {
-        Result result = parse(context);
-        if (result.result == null) {
+    public Result runParser(Buffer buffer) {
+        Result result = parse(buffer);
+        if (result.isError()) {
             return result;
         }
         if (isIgnore()) {
-            result.result = new ArrayList(0);
+            return Result.empty();
         }
         return result;
     }
-    public abstract Result parse(Context context);
+    public abstract Result parse(Buffer buffer);
 
     public Parser connect(Parser parser) {
         return new Parser() {
             @Override
-            public Result parse(Context context) {
-                Result step1 = Parser.this.runParser(context);
-                if (step1.result == null) {
+            public Result parse(Buffer buffer) {
+                Result step1 = Parser.this.runParser(buffer);
+                if (step1.isError()) {
                     return Result.builder().errorMsg(step1.errorMsg).build();
                 }
-                Result step2 = parser.runParser(context);
-                if (step2.result == null) {
+                Result step2 = parser.runParser(buffer);
+                if (step2.isError()) {
                     return Result.builder().errorMsg(step2.errorMsg).build();
                 }
                 Result result = Result.builder().result(new ArrayList()).length(0).build();
                 result.length += step1.length + step2.length;
-                result.result.addAll(step1.result);
-                result.result.addAll(step2.result);
+                result.addAll(step1.getResult());
+                result.addAll(step2.getResult());
                 return result;
             }
         };
@@ -46,13 +47,13 @@ public abstract class Parser {
     public Parser must(Predicate p) {
         return new Parser() {
             @Override
-            public Result parse(Context context) {
-                int pos = context.getPos();
-                Result result = Parser.this.runParser(context);
-                if (result.result != null && p.test(result.result)) {
+            public Result parse(Buffer buffer) {
+                int pos = buffer.getPos();
+                Result result = Parser.this.runParser(buffer);
+                if (result.isSuccess() && p.test(result.getResult())) {
                     return result;
                 }
-                context.jump(pos);
+                buffer.jump(pos);
                 return Result.builder()
                         .errorMsg(ErrorUtil.error(pos))
                         .build();
@@ -63,19 +64,19 @@ public abstract class Parser {
     public Parser some() {
         return new Parser() {
             @Override
-            public Result parse(Context context) {
-                Result first = Parser.this.runParser(context);
-                if (first.result == null) {
+            public Result parse(Buffer buffer) {
+                Result first = Parser.this.runParser(buffer);
+                if (first.isError()) {
                     return Result.builder().errorMsg(first.errorMsg).build();
                 }
                 Result result = Result.builder().result(new ArrayList(1)).length(0).build();
                 result.length += first.length;
-                result.result.addAll(first.result);
-                Result tmp = Parser.this.runParser(context);
-                while(tmp.result != null) {
+                result.addAll(first.getResult());
+                Result tmp = Parser.this.runParser(buffer);
+                while(tmp.isSuccess()) {
                     result.length += tmp.length;
-                    result.result.addAll(tmp.result);
-                    tmp = Parser.this.runParser(context);
+                    result.addAll(tmp.getResult());
+                    tmp = Parser.this.runParser(buffer);
                 }
                 return result;
             }
@@ -84,19 +85,43 @@ public abstract class Parser {
     public Parser many() {
         return new Parser() {
             @Override
-            public Result parse(Context context) {
+            public Result parse(Buffer buffer) {
                 Result result = Result.builder().result(new ArrayList(0)).length(0).build();
-                Result first = Parser.this.runParser(context);
-                if (first.result == null) {
+                Result first = Parser.this.runParser(buffer);
+                if (first.isError()) {
                     return result;
                 }
                 result.length += first.length;
-                result.result.addAll(first.result);
-                Result tmp = Parser.this.runParser(context);
-                while(tmp.result != null) {
+                result.addAll(first.getResult());
+                Result tmp = Parser.this.runParser(buffer);
+                while(tmp.isSuccess()) {
                     result.length += tmp.length;
-                    result.result.addAll(tmp.result);
-                    tmp = Parser.this.runParser(context);
+                    result.addAll(tmp.getResult());
+                    tmp = Parser.this.runParser(buffer);
+                }
+                return result;
+            }
+        };
+    }
+
+    public Parser range(int from, int end) {
+        return repeat(from).attempt(end - from);
+    }
+    public Parser attempt(int n) {
+        return new Parser() {
+            @Override
+            public Result parse(Buffer buffer) {
+                Result result = Result.empty();
+                if (n <= 0) {
+                    return result;
+                }
+                for (int i = 0; i < n; i++) {
+                    Result tmp = Parser.this.runParser(buffer);
+                    if (tmp.isError()) {
+                        return result;
+                    }
+                    result.length += tmp.length;
+                    result.addAll(tmp.getResult());
                 }
                 return result;
             }
@@ -106,18 +131,18 @@ public abstract class Parser {
     public Parser repeat(int n) {
         return new Parser() {
             @Override
-            public Result parse(Context context) {
+            public Result parse(Buffer buffer) {
                 Result result = Result.builder().result(new ArrayList(1)).length(0).build();
                 if (n <= 0) {
                     return Result.builder().length(0).result(new ArrayList(0)).build();
                 }
                 for(int i = 0; i < n; i++) {
-                    Result tmp = Parser.this.runParser(context);
-                    if (tmp.result == null) {
+                    Result tmp = Parser.this.runParser(buffer);
+                    if (tmp.isError()) {
                         return Result.builder().errorMsg(tmp.errorMsg).build();
                     }
                     result.length += tmp.length;
-                    result.result.addAll(tmp.result);
+                    result.addAll(tmp.getResult());
                 }
                 return result;
             }
@@ -127,20 +152,19 @@ public abstract class Parser {
     public Parser map(Function<List, ?> mapper) {
         return new Parser() {
             @Override
-            public Result parse(Context context) {
-                Result result = Parser.this.parse(context);
-                if (result.result == null) {
+            public Result parse(Buffer buffer) {
+                Result result = Parser.this.parse(buffer);
+                if (result.isError()) {
                     return result;
                 }
-                result.result = List.of(mapper.apply(result.result));
+                result.map(mapper);
                 return result;
             }
         };
     }
 
     public Parser trim() {
-        Parser spaces = CharParsers.space().many();
-        return spaces.connect(this).connect(spaces);
+        return TextParsers.blank().connect(this).connect(TextParsers.blank());
     }
 
     public Parser sepBy(Parser parser) {

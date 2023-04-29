@@ -22,14 +22,11 @@ public class Buffer {
         return result;
     }
 
-    public byte[] readN(int n) {
+    public int offset(int n) {
         if (n > this.data.length - this.pos) {
-            n = this.data.length - this.pos;
+            return this.data.length;
         }
-        byte[] result = new byte[n];
-        System.arraycopy(data, this.pos, result, 0, n);
-        this.pos += n;
-        return result;
+        return this.pos + n;
     }
 
     public int remaining() {
@@ -40,13 +37,24 @@ public class Buffer {
         this.pos = pos;
     }
 
-    public char head() {
-        return (char) this.data[this.pos];
+    public byte head() {
+        return this.data[this.pos];
     }
 
     public byte[] content() {
         byte[] bytes = new byte[data.length - pos];
         System.arraycopy(data, pos, bytes, 0, bytes.length);
         return bytes;
+    }
+
+    public byte[] headN(int n) {
+        int len = offset(n) - this.pos;
+        byte[] bytes = new byte[len];
+        System.arraycopy(data, this.pos, bytes, 0, len);
+        return bytes;
+    }
+
+    public void forward(int n) {
+        this.pos += n;
     }
 }
