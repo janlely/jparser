@@ -3,6 +3,12 @@ package org.jay.parser;
 import org.jay.parser.util.Buffer;
 
 public class Combinator {
+    /**
+     * Select and parse from the given parsers in order, and succeed as long as one succeeds.
+     * @param parser
+     * @param others
+     * @return
+     */
     public static Parser choose(Parser parser, Parser ...others) {
 
         return new Parser() {

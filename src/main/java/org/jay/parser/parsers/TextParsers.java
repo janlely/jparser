@@ -17,6 +17,10 @@ import java.util.function.Predicate;
 
 public class TextParsers {
 
+    /**
+     * Do nothing but return success
+     * @return
+     */
     public static Parser empty() {
         return new Parser() {
             @Override
@@ -29,10 +33,21 @@ public class TextParsers {
         };
     }
 
+    /**
+     * Parse a character using UTF-8 encoding.
+     * @param ch
+     * @return
+     */
     public static Parser one(char ch) {
         return one(ch, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Parse a character, ignoring case.
+     * @param ch
+     * @param ignoreCase
+     * @return
+     */
     public static Parser one(char ch, boolean ignoreCase) {
         if (ignoreCase) {
             return Combinator.choose(
@@ -43,22 +58,39 @@ public class TextParsers {
         return one(ch, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Parse a character according to the given encoding
+     * @param ch
+     * @param charset
+     * @return
+     */
     public static Parser one(char ch, Charset charset) {
         return ByteParsers.bytes(String.valueOf(ch).getBytes(charset))
                 .map(Mapper.toChar(charset));
     }
 
+    /**
+     * Parse a character that satisfies a condition , using UTF-8 encoding.
+     * @param p
+     * @return
+     */
     public static Parser satisfy(Predicate<Character> p) {
         return satisfy(p, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Parse a character that satisfies a condition according to the given encoding.
+     * @param p
+     * @param charset
+     * @return
+     */
     public static Parser satisfy(Predicate<Character> p, Charset charset) {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
                 byte[] bytes = buffer.headN(4);
                 try {
-                    char ch = CharUtil.read2(bytes, charset);
+                    char ch = CharUtil.read(bytes, charset);
                     if (p.test(ch)) {
                         int len = String.valueOf(ch).getBytes(charset).length;
                         buffer.forward(len);
@@ -77,11 +109,22 @@ public class TextParsers {
         };
     }
 
+    /**
+     * Parse a given string.
+     * @param value
+     * @return
+     */
     public static Parser string(String value) {
         return string(value, StandardCharsets.UTF_8);
     }
 
 
+    /**
+     * Parse a given string, ignoring case.
+     * @param value
+     * @param ignoreCase
+     * @return
+     */
     public static Parser string(String value, boolean ignoreCase) {
         if (!ignoreCase) {
             return string(value, StandardCharsets.UTF_8);
@@ -93,6 +136,12 @@ public class TextParsers {
         return result.map(Mapper.replace(value));
     }
 
+    /**
+     * Parse a given string according to the given encoding.
+     * @param value
+     * @param charset
+     * @return
+     */
     public static Parser string(String value, Charset charset) {
         Parser result = empty();
         for(int i = 0; i < value.length(); i++) {
@@ -101,38 +150,81 @@ public class TextParsers {
         return result.map(Mapper.toStr());
     }
 
+    /**
+     * Parse any character.
+     * @return
+     */
     public static Parser any() {
         return any(StandardCharsets.UTF_8);
     }
 
+    /**
+     * Parse any UTF-8 character.
+     * @param charset
+     * @return
+     */
     public static Parser any(Charset charset) {
         return satisfy(__ -> true, charset);
     }
 
+    /**
+     * Parse any n characters according to the specified encoding.
+     * @param n
+     * @param charset
+     * @return
+     */
     public static Parser take(int n, Charset charset) {
         return any(charset).repeat(n).map(Mapper.toStr());
     }
 
+    /**
+     * Parse n UTF-8 characters.
+     * @param n
+     * @return
+     */
     public static Parser take(int n) {
         return take(n, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Skip n characters of the given encoding.
+     * @param n
+     * @param charset
+     * @return
+     */
     public static Parser skip(int n, Charset charset) {
         return take(n, charset).ignore();
     }
 
+    /**
+     * Skip n UTF-8 characters.
+     * @param n
+     * @return
+     */
     public static Parser skip(int n) {
         return skip(n, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Parse a whitespace character, including spaces, tabs, line feeds, etc.
+     * @return
+     */
     public static Parser white() {
         return satisfy(c -> Character.isWhitespace(c)).ignore();
     }
 
+    /**
+     * Parse a sequence of whitespace.
+     * @return
+     */
     public static Parser blank() {
         return white().many();
     }
 
+    /**
+     * Parse EOF (end-of-file).
+     * @return
+     */
     public static Parser eof() {
         return new Parser() {
             @Override

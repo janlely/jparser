@@ -21,13 +21,14 @@ public class Mapper {
     public static Function<List, Character> toChar(Charset charset) {
         return bytes -> (Character) bytes.stream().map(bs -> {
             try {
-                return CharUtil.read2((byte[]) bs, charset);
+                return CharUtil.read((byte[]) bs, charset);
             } catch (CharacterCodingException e) {
                 return null;
             }
         }).findFirst().get();
     }
 
+    //replace parse result with given value
     public static <T> Function<List, T> replace(T value) {
         return __ -> value;
     }

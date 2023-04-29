@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * This is the core class of Parser Combinator.
+ */
 public abstract class Parser {
     protected boolean ignore = false;
     public Result runParser(Buffer buffer) {
@@ -23,6 +26,11 @@ public abstract class Parser {
     }
     public abstract Result parse(Buffer buffer);
 
+    /**
+     * Connect with another parser
+     * @param parser
+     * @return
+     */
     public Parser connect(Parser parser) {
         return new Parser() {
             @Override
@@ -44,6 +52,11 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * Add a conditional judgment
+     * @param p
+     * @return
+     */
     public Parser must(Predicate p) {
         return new Parser() {
             @Override
@@ -61,6 +74,10 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * Repeat at least once
+     * @return
+     */
     public Parser some() {
         return new Parser() {
             @Override
@@ -82,6 +99,11 @@ public abstract class Parser {
             }
         };
     }
+
+    /**
+     * Repeat at least 0 times
+     * @return
+     */
     public Parser many() {
         return new Parser() {
             @Override
@@ -104,6 +126,12 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * The repetition count depends on the given range
+     * @param from
+     * @param end
+     * @return
+     */
     public Parser range(int from, int end) {
         return repeat(from).attempt(end - from);
     }
@@ -128,6 +156,11 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * Repeat a specified number of times.
+     * @param n
+     * @return
+     */
     public Parser repeat(int n) {
         return new Parser() {
             @Override
@@ -149,6 +182,11 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * Map the result to another value.
+     * @param mapper
+     * @return
+     */
     public Parser map(Function<List, ?> mapper) {
         return new Parser() {
             @Override
@@ -163,17 +201,31 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * Trim leading and trailing whitespace.
+     * @return
+     */
     public Parser trim() {
         return TextParsers.blank().connect(this).connect(TextParsers.blank());
     }
 
+    /**
+     * Split by a specified character, the delimiter will not appear in the result.
+     * @param parser
+     * @return
+     */
     public Parser sepBy(Parser parser) {
         return connect(parser.connect(this).many());
     }
+
     public boolean isIgnore() {
         return this.ignore;
     }
 
+    /**
+     * Parse, but ignore the parsing result.
+     * @return
+     */
     public Parser ignore() {
         this.ignore = true;
         return this;
