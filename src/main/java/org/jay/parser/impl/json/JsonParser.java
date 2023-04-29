@@ -68,10 +68,8 @@ public class JsonParser extends Parser{
      */
     public static Parser stringParser() {
         Parser escape = TextParsers.one('\\').ignore()
-                .connect(Combinator.choose(
-                        TextParsers.one('"'),
-                        TextParsers.one('\\')
-                ));
+                .connect(TextParsers.one('"')
+                        .or(TextParsers.one('\\')));
         Parser charParser = Combinator.choose(
                 escape,
                 TextParsers.satisfy(c -> c != '"')

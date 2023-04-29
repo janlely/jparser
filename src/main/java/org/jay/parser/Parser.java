@@ -15,6 +15,20 @@ import java.util.function.Predicate;
  */
 public abstract class Parser {
     protected boolean ignore = false;
+
+    public boolean isIgnore() {
+        return this.ignore;
+    }
+
+    /**
+     * Parse, but ignore the parsing result.
+     * @return
+     */
+    public Parser ignore() {
+        this.ignore = true;
+        return this;
+    }
+
     public Result runParser(Buffer buffer) {
         Result result = parse(buffer);
         if (result.isError()) {
@@ -221,17 +235,23 @@ public abstract class Parser {
         return connect(parser.connect(this).many());
     }
 
-    public boolean isIgnore() {
-        return this.ignore;
-    }
-
-    /**
-     * Parse, but ignore the parsing result.
-     * @return
-     */
-    public Parser ignore() {
-        this.ignore = true;
-        return this;
+    public Parser or(Parser parser) {
+        return new Parser() {
+            @Override
+            public Result parse(Buffer buffer) {
+                Result result = Parser.this.runParser(buffer);
+                if (result.isSuccess()) {
+                    return result;
+                }
+                Result result2 = parser.runParser(buffer);
+                if (result2.isSuccess()) {
+                    return result2;
+                }
+                return Result.builder()
+                        .errorMsg("No suitable Parser to choose")
+                        .build();
+            }
+        };
     }
 
 }

@@ -31,8 +31,8 @@ public class CsvParser {
                         return TextParsers.one('"').ignore()
                                 .connect(Combinator.choose(
                                                 TextParsers.one('"').ignore().connect(TextParsers.one('"')),
-                                                TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '"'))
-                                        .many().map(Mapper.toStr()))
+                                                TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '"')
+                                ).many().map(Mapper.toStr()))
                                 .connect(TextParsers.one('"').ignore()).runParser(buffer);
                     default:
                         return TextParsers.satisfy(c -> !Character.isISOControl(c) && c != ',')
