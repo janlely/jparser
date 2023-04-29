@@ -2,4 +2,4 @@
 
 # Parser Combinator written by java
 
-可能是目前最好用的Parser
+Probably the most user-friendly parser in the Java language at present.
