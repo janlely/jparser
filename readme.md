@@ -27,3 +27,8 @@ see [CSVParser](https://github.com/janlely/jparser/blob/main/src/main/java/org/j
 
 ## Sample Usage: implement a Json parser
 see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/json/JsonParser.java)
+
+
+## Sample Usage: implement a XML parser
+see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/xml/XmlParser.java)
+
