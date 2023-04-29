@@ -43,7 +43,7 @@ public class XmlParserTests {
                        "<heading>Reminder</heading>\n" +
                        "<body>Don't forget me this weekend!</body>\n" +
                      "</note>";
-        Result result1 = XmlParser.nodeParser().runParser(Buffer.builder()
+        Result result1 = new XmlParser().runParser(Buffer.builder()
                 .data(src.getBytes())
                 .build());
         assert result1.isSuccess();
