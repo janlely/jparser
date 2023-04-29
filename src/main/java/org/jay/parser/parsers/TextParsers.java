@@ -8,6 +8,7 @@ import org.jay.parser.util.CharUtil;
 import org.jay.parser.util.ErrorUtil;
 import org.jay.parser.util.Mapper;
 
+import java.awt.image.MultiPixelPackedSampleModel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -205,6 +206,44 @@ public class TextParsers {
         return skip(n, StandardCharsets.UTF_8);
     }
 
+
+    /**
+     * Parse characters that satisfy a condition and return a string, using UTF-8
+     * @param p
+     * @return
+     */
+    public static Parser takeWhile(Predicate<Character> p) {
+        return takeWhile(p, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Parse characters that satisfy a condition according to the given encoding and return a string.
+     * @param p
+     * @return
+     */
+    public static Parser takeWhile(Predicate<Character> p, Charset charset) {
+        return satisfy(p, charset).many().map(Mapper.toStr());
+    }
+
+    /**
+     * Skip characters that satisfy a condition according to the given encoding
+     * @param p
+     * @return
+     */
+    public static Parser skipWhile(Predicate<Character> p) {
+        return takeWhile(p, StandardCharsets.UTF_8).ignore();
+    }
+
+    /**
+     * Skip characters that satisfy a condition and UTF-8 characters.
+     * @param p
+     * @param charset
+     * @return
+     */
+    public static Parser skipWhile(Predicate<Character> p, Charset charset) {
+        return takeWhile(p, charset).ignore();
+    }
+
     /**
      * Parse a whitespace character, including spaces, tabs, line feeds, etc.
      * @return
@@ -238,5 +277,6 @@ public class TextParsers {
             }
         };
     }
+
 
 }

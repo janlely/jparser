@@ -11,9 +11,19 @@ import java.util.List;
 
 public class NumberParsers {
 
+    /**
+     * Parse a specified integer encoded as a string.
+     * @param a
+     * @return
+     */
     public static Parser intStr(int a) {
         return TextParsers.string(String.valueOf(a)).map(__ -> a);
     }
+
+    /**
+     * Parse an arbitrary long integer encoded in big-endian format.
+     * @return
+     */
     public static Parser anyLongBE() {
         return new Parser() {
             @Override
@@ -34,6 +44,10 @@ public class NumberParsers {
         };
     }
 
+    /**
+     * Parse an arbitrary long integer encoded in little-endian format.
+     * @return
+     */
     public static Parser anyLongLE() {
         return new Parser() {
             @Override
@@ -54,6 +68,11 @@ public class NumberParsers {
         };
     }
 
+    /**
+     *
+     * Parse an arbitrary integer encoded in big-endian format.
+     * @return
+     */
     public static Parser anyIntBE() {
         return new Parser() {
             @Override
@@ -74,6 +93,10 @@ public class NumberParsers {
         };
     }
 
+    /**
+     * Parse an arbitrary integer encoded in little-endian format.
+     * @return
+     */
     public static Parser anyIntLE() {
         return new Parser() {
             @Override
@@ -94,16 +117,39 @@ public class NumberParsers {
         };
     }
 
+    /**
+     * Parse a specified integer encoded in little-endian format
+     * @param a
+     * @return
+     */
     public static Parser intLE(int a) {
         return anyIntLE().must(b -> a == (int)((List)b).get(0));
     }
+
+    /**
+     * Parse a specified integer encoded in big-endian format
+     * @param a
+     * @return
+     */
     public static Parser intBE(int a) {
         return anyIntBE().must(b -> a == (int)((List)b).get(0));
     }
 
+
+    /**
+     * Parse a specified long integer encoded in big-endian format
+     * @param a
+     * @return
+     */
     public static Parser longBE(long a) {
         return anyLongBE().must(b -> a == (long)((List)b).get(0));
     }
+
+    /**
+     * Parse a specified long integer encoded in littlec-endian format
+     * @param a
+     * @return
+     */
     public static Parser longLE(long a) {
         return anyLongLE().must(b -> a == (long)((List)b).get(0));
     }

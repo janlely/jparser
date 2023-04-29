@@ -19,6 +19,10 @@ public class JsonParser extends Parser{
         return result;
     }
 
+    /**
+     * parse json array
+     * @return
+     */
     public static Parser arrayParser() {
         return TextParsers.one('[').ignore()
                 .connect(valueParser().sepBy(TextParsers.one(',').ignore()))
@@ -29,6 +33,10 @@ public class JsonParser extends Parser{
                         .build());
     }
 
+    /**
+     * parse json object
+     * @return
+     */
     public static Parser objectParser() {
         Parser members = member().sepBy(TextParsers.one(',').ignore())
                 .map(mbs -> JsonValue.builder()
@@ -40,6 +48,10 @@ public class JsonParser extends Parser{
                 .connect(TextParsers.one('}').ignore());
     }
 
+    /**
+     * parse member of json object
+     * @return
+     */
     public static Parser member() {
         return stringParser().trim()
                 .connect(TextParsers.one(':').ignore())
@@ -50,6 +62,10 @@ public class JsonParser extends Parser{
                         .build());
     }
 
+    /**
+     * parse json string
+     * @return
+     */
     public static Parser stringParser() {
         Parser escape = TextParsers.one('\\').ignore()
                 .connect(Combinator.choose(
@@ -65,7 +81,10 @@ public class JsonParser extends Parser{
                 .connect(TextParsers.one('"').ignore());
     }
 
-
+    /**
+     * parse json null
+     * @return
+     */
     public static Parser nullParser() {
         return TextParsers.string("null", true).map(__ ->
                 JsonValue.builder()
@@ -74,6 +93,10 @@ public class JsonParser extends Parser{
                         .build());
     }
 
+    /**
+     * parse json number
+     * @return
+     */
     public static Parser numberParser() {
         return TextParsers.satisfy(c -> Character.isDigit(c) || c == '-' || c == '.' || c == 'e')
                 .many()
@@ -85,6 +108,10 @@ public class JsonParser extends Parser{
 
     }
 
+    /**
+     * parse json bool
+     * @return
+     */
     public static Parser boolParser() {
         Parser trueValue = TextParsers.string("true", true).map(__ ->
                 JsonValue.builder()
@@ -99,6 +126,10 @@ public class JsonParser extends Parser{
         return Combinator.choose(trueValue, falseValue);
     }
 
+    /**
+     * core json parser
+     * @return
+     */
     public static Parser valueParser() {
         return new Parser() {
             @Override

@@ -12,6 +12,11 @@ import java.util.function.Predicate;
 
 public class ByteParsers {
 
+    /**
+     * Parse a specified character array.
+     * @param data
+     * @return
+     */
     public static Parser bytes(byte[] data) {
         return new Parser() {
             @Override
@@ -31,6 +36,12 @@ public class ByteParsers {
         };
     }
 
+    /**
+     *
+     * Parse a byte that satisfies a condition.
+     * @param p
+     * @return
+     */
     public static Parser satisfy(Predicate<Byte> p) {
         return new Parser() {
             @Override
@@ -50,18 +61,40 @@ public class ByteParsers {
         };
     }
 
+    /**
+     * Parse any byte.
+     * @return
+     */
     public static Parser any() {
         return satisfy(__ -> true);
     }
 
+    /**
+     * Parse a given byte.
+     * @param b
+     * @return
+     */
     public static Parser one(byte b) {
         return satisfy(a -> a == b);
     }
 
+
+    /**
+     * Parse n arbitrary bytes.
+     * @param n
+     * @return
+     */
     public static Parser take(int n) {
         return any().repeat(n).map(Mapper.toBytes());
     }
 
+
+    /**
+     *
+     * Skip n arbitrary bytes.
+     * @param n
+     * @return
+     */
     public static Parser skip(int n) {
         return take(n).ignore();
     }
