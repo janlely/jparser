@@ -3,6 +3,7 @@
 # Parser Combinator written by java
 
 Probably the most user-friendly parser in the Java language at present.
+Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jparser is capable of parsing bytes.
 
 ## Sample Usage: implement a CSV parser
 * Parser a simple csv line:
