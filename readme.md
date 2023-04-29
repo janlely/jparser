@@ -6,7 +6,7 @@ Probably the most user-friendly parser in the Java language at present.
 
 ## Sample Usage: implement a CSV parser
 * Parser a simple csv line:
-```
+```java
     @Test
     public void testSimpleCsv() {
         Parser csvLineParser = TextParsers.satisfy(c -> Character.isLetterOrDigit(c))
