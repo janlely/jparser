@@ -30,5 +30,5 @@ see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/j
 
 
 ## Sample Usage: implement a XML parser
-see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/xml/XmlParser.java)
+see [XmlPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/xml/XmlParser.java)
 
