@@ -24,7 +24,7 @@ public class Result {
         return !isSuccess();
     }
     public <T> T get(int idx) {
-        return (T) result.get(0);
+        return (T) result.get(idx);
     }
 
     public void addAll(List l) {
