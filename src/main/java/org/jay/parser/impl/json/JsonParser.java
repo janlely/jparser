@@ -13,7 +13,10 @@ public class JsonParser extends Parser{
 
     @Override
     public Result parse(Buffer buffer) {
-        return valueParser().trim().parse(buffer);
+        Result result = valueParser().trim()
+                .connect(TextParsers.eof())
+                .parse(buffer);
+        return result;
     }
 
     public static Parser arrayParser() {
@@ -85,12 +88,12 @@ public class JsonParser extends Parser{
     public static Parser boolParser() {
         Parser trueValue = TextParsers.string("true", true).map(__ ->
                 JsonValue.builder()
-                        .type(JsonType.NULL)
+                        .type(JsonType.BOOL)
                         .value(true)
                         .build());
         Parser falseValue = TextParsers.string("false", true).map(__ ->
                 JsonValue.builder()
-                        .type(JsonType.NULL)
+                        .type(JsonType.BOOL)
                         .value(false)
                         .build());
         return Combinator.choose(trueValue, falseValue);
