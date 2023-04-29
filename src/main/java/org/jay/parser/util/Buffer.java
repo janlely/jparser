@@ -38,7 +38,10 @@ public class Buffer {
     }
 
     public byte head() {
-        return this.data[this.pos];
+        if (this.pos < this.data.length) {
+            return this.data[this.pos];
+        }
+        throw new RuntimeException("no more data to parse");
     }
 
     public byte[] content() {

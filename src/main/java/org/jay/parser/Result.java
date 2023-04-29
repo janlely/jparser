@@ -38,6 +38,10 @@ public class Result {
                 .build();
     }
 
+    public void clear() {
+        this.result = new ArrayList(0);
+    }
+
     public boolean isEmpty() {
         return this.result.isEmpty();
     }

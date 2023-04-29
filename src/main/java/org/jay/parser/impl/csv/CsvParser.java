@@ -20,15 +20,20 @@ public class CsvParser {
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
+                if (buffer.remaining() <= 0) {
+                    return Result.builder()
+                            .errorMsg("no more data to parse")
+                            .build();
+                }
                 byte head = buffer.head();
                 switch (head) {
                     case '"':
-                        return TextParsers.one('"').ignore().connect(
-                                Combinator.choose(
-                                        TextParsers.one('"').ignore().connect(TextParsers.one('"')),
-                                        TextParsers.satisfy(c -> !Character.isISOControl(c))
-                                ).many().map(Mapper.toStr())
-                        ).connect(TextParsers.one('"').ignore()).runParser(buffer);
+                        return TextParsers.one('"').ignore()
+                                .connect(Combinator.choose(
+                                                TextParsers.one('"').ignore().connect(TextParsers.one('"')),
+                                                TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '"'))
+                                        .many().map(Mapper.toStr()))
+                                .connect(TextParsers.one('"').ignore()).runParser(buffer);
                     default:
                         return TextParsers.satisfy(c -> !Character.isISOControl(c) && c != ',')
                                 .many().map(Mapper.toStr()).runParser(buffer);

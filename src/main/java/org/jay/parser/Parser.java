@@ -4,6 +4,7 @@ import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
 import org.jay.parser.util.ErrorUtil;
 
+import javax.imageio.event.IIOReadProgressListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -20,7 +21,8 @@ public abstract class Parser {
             return result;
         }
         if (isIgnore()) {
-            return Result.empty();
+            result.clear();
+            return result;
         }
         return result;
     }
@@ -41,6 +43,7 @@ public abstract class Parser {
                 }
                 Result step2 = parser.runParser(buffer);
                 if (step2.isError()) {
+                    buffer.backward(step1.length);
                     return Result.builder().errorMsg(step2.errorMsg).build();
                 }
                 Result result = Result.builder().result(new ArrayList()).length(0).build();
