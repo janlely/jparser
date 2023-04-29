@@ -134,6 +134,9 @@ public class JsonParser extends Parser{
         return new Parser() {
             @Override
             public Result parse(Buffer buffer) {
+                if (buffer.remaining() <= 0) {
+                    return Result.builder().errorMsg("no more data to parser").build();
+                }
                 byte head = buffer.head();
                 switch (head) {
                     case '"' :
