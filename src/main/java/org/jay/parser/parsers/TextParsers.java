@@ -1,6 +1,5 @@
 package org.jay.parser.parsers;
 
-import org.jay.parser.Combinator;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.util.Buffer;
@@ -8,7 +7,6 @@ import org.jay.parser.util.CharUtil;
 import org.jay.parser.util.ErrorUtil;
 import org.jay.parser.util.Mapper;
 
-import java.awt.image.MultiPixelPackedSampleModel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;

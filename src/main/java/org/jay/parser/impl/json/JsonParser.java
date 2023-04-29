@@ -1,6 +1,5 @@
 package org.jay.parser.impl.json;
 
-import org.jay.parser.Combinator;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.parsers.TextParsers;

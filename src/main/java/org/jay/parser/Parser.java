@@ -4,7 +4,6 @@ import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
 import org.jay.parser.util.ErrorUtil;
 
-import javax.imageio.event.IIOReadProgressListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -70,27 +69,6 @@ public abstract class Parser {
         };
     }
 
-//    public Parser connect(Parser parser) {
-//        return new Parser() {
-//            @Override
-//            public Result parse(Buffer buffer) {
-//                Result step1 = Parser.this.runParser(buffer);
-//                if (step1.isError()) {
-//                    return Result.builder().errorMsg(step1.errorMsg).build();
-//                }
-//                Result step2 = parser.runParser(buffer);
-//                if (step2.isError()) {
-//                    buffer.backward(step1.length);
-//                    return Result.builder().errorMsg(step2.errorMsg).build();
-//                }
-//                Result result = Result.builder().result(new ArrayList()).length(0).build();
-//                result.length += step1.length + step2.length;
-//                result.addAll(step1.getResult());
-//                result.addAll(step2.getResult());
-//                return result;
-//            }
-//        };
-//    }
 
     /**
      * Connect with another parser
@@ -301,15 +279,6 @@ public abstract class Parser {
                     return Result.empty();
                 }
                 return result;
-            }
-        };
-    }
-
-    public static Parser wrap(Parser parser) {
-        return new Parser() {
-            @Override
-            public Result parse(Buffer buffer) {
-                return parser.parse(buffer);
             }
         };
     }

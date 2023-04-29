@@ -1,6 +1,5 @@
 package org.jay.parser.impl.xml;
 
-import org.jay.parser.Combinator;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.parsers.TextParsers;
@@ -10,7 +9,6 @@ import org.jay.parser.util.Mapper;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class XmlParser extends Parser {
