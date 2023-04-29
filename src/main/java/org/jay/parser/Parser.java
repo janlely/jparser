@@ -44,6 +44,34 @@ public abstract class Parser {
 
     /**
      * Connect with another parser
+     * @param generator
+     * @return
+     */
+    public Parser connectWith(Function<Result, Parser> generator) {
+        return new Parser() {
+            @Override
+            public Result parse(Buffer buffer) {
+                Result step1 = Parser.this.runParser(buffer);
+                if (step1.isError()) {
+                    return Result.builder().errorMsg(step1.errorMsg).build();
+                }
+                Result step2 = generator.apply(step1).runParser(buffer);
+                if (step2.isError()) {
+                    buffer.backward(step1.length);
+                    return Result.builder().errorMsg(step2.errorMsg).build();
+                }
+                Result result = Result.builder().result(new ArrayList()).length(0).build();
+                result.length += step1.length + step2.length;
+                result.addAll(step1.getResult());
+                result.addAll(step2.getResult());
+                return result;
+            }
+        };
+    }
+
+
+    /**
+     * Connect with another parser
      * @param parser
      * @return
      */
@@ -96,25 +124,7 @@ public abstract class Parser {
      * @return
      */
     public Parser some() {
-        return new Parser() {
-            @Override
-            public Result parse(Buffer buffer) {
-                Result first = Parser.this.runParser(buffer);
-                if (first.isError()) {
-                    return Result.builder().errorMsg(first.errorMsg).build();
-                }
-                Result result = Result.builder().result(new ArrayList(1)).length(0).build();
-                result.length += first.length;
-                result.addAll(first.getResult());
-                Result tmp = Parser.this.runParser(buffer);
-                while(tmp.isSuccess()) {
-                    result.length += tmp.length;
-                    result.addAll(tmp.getResult());
-                    tmp = Parser.this.runParser(buffer);
-                }
-                return result;
-            }
-        };
+        return connect(many());
     }
 
     /**
@@ -255,6 +265,28 @@ public abstract class Parser {
                 return Result.builder()
                         .errorMsg("No suitable Parser to choose")
                         .build();
+            }
+        };
+    }
+
+    public Parser optional() {
+        return new Parser() {
+            @Override
+            public Result parse(Buffer buffer) {
+                Result result = Parser.this.runParser(buffer);
+                if (result.isError()) {
+                    return Result.empty();
+                }
+                return result;
+            }
+        };
+    }
+
+    public static Parser wrap(Parser parser) {
+        return new Parser() {
+            @Override
+            public Result parse(Buffer buffer) {
+                return parser.parse(buffer);
             }
         };
     }

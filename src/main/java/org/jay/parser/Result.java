@@ -14,6 +14,7 @@ public class Result {
     @Getter
     private List result;
     String errorMsg;
+    @Getter
     int length;
 
     public boolean isSuccess() {
@@ -44,6 +45,10 @@ public class Result {
 
     public boolean isEmpty() {
         return this.result.isEmpty();
+    }
+
+    public void incLen(int n) {
+        this.length += n;
     }
 
     public void map(Function<List, ?> mapper) {

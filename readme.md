@@ -10,7 +10,7 @@ Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jpar
 ```java
     @Test
     public void testSimpleCsv() {
-        Parser csvLineParser = TextParsers.satisfy(c -> Character.isLetterOrDigit(c))
+        Parser csvLineParser = TextParsers.satisfy(Character::isLetterOrDigit)
                 .many().map(Mapper.toStr())
                 .sepBy(TextParsers.one(',').ignore());
         Result result = csvLineParser.runParser(Buffer.builder()
