@@ -2,15 +2,17 @@ package org.jay.parser.util;
 
 import lombok.Builder;
 import lombok.Getter;
+import org.jay.parser.IBuffer;
 
 import java.util.Optional;
 
 @Builder
-public class Buffer {
+public class Buffer implements IBuffer {
     private byte[] data;
     @Getter
     private int pos;
 
+    @Override
     public void backward(int n) {
         if (this.pos < n) {
             throw new RuntimeException("unable to backward, hit top");
@@ -18,12 +20,7 @@ public class Buffer {
         this.pos -= n;
     }
 
-    public byte[] copyOf(int p, int length) {
-        byte[] result = new byte[length];
-        System.arraycopy(data, p, result, 0, length);
-        return result;
-    }
-
+    @Override
     public int offset(int n) {
         if (n > this.data.length - this.pos) {
             return this.data.length;
@@ -31,14 +28,17 @@ public class Buffer {
         return this.pos + n;
     }
 
+    @Override
     public int remaining() {
         return data.length - pos;
     }
 
+    @Override
     public void jump(int pos) {
         this.pos = pos;
     }
 
+    @Override
     public Optional<Byte> head() {
         if (this.pos < this.data.length) {
             return Optional.of(this.data[this.pos]);
@@ -52,6 +52,7 @@ public class Buffer {
         return bytes;
     }
 
+    @Override
     public byte[] headN(int n) {
         int len = offset(n) - this.pos;
         byte[] bytes = new byte[len];
@@ -59,6 +60,7 @@ public class Buffer {
         return bytes;
     }
 
+    @Override
     public void forward(int n) {
         this.pos += n;
     }

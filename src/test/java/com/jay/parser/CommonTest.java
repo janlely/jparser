@@ -10,6 +10,8 @@ import org.jay.parser.util.Mapper;
 import org.junit.Test;
 
 import java.nio.charset.CharacterCodingException;
+import java.util.ArrayDeque;
+import java.util.List;
 
 public class CommonTest {
 
@@ -72,5 +74,16 @@ public class CommonTest {
         assert result.<String>get(1).equals("field2");
         assert result.<String>get(2).equals("field3");
         assert result.<String>get(3).equals("field4");
+    }
+
+    @Test
+    public void testDqueue() {
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        queue.add(5);
+        queue.addAll(List.of(6,7,8));
+        queue.addFirst(4);
+        queue.addFirst(3);
+        queue.addFirst(2);
+        System.out.println("hello");
     }
 }

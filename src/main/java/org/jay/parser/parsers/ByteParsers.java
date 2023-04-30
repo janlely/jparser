@@ -1,8 +1,8 @@
 package org.jay.parser.parsers;
 
+import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
-import org.jay.parser.util.Buffer;
 import org.jay.parser.util.ErrorUtil;
 import org.jay.parser.util.Mapper;
 
@@ -25,7 +25,7 @@ public class ByteParsers {
     public static Parser bytes(byte[] data, String desc) {
         return new Parser(String.format("ByteParser.bytes<%s>", desc)) {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 byte[] bs = buffer.headN(data.length);
                 if (!Arrays.equals(data, bs)) {
                     return Result.builder()
@@ -50,7 +50,7 @@ public class ByteParsers {
     public static Parser satisfy(Predicate<Byte> p) {
         return new Parser("ByteParser.satisfy()") {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 Optional<Byte> b = buffer.head();
                 if (b.isEmpty() || !p.test(b.get())) {
                     return Result.builder()

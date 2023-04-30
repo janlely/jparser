@@ -1,8 +1,8 @@
 package org.jay.parser.parsers;
 
+import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
-import org.jay.parser.util.Buffer;
 import org.jay.parser.util.ErrorUtil;
 
 import java.nio.ByteBuffer;
@@ -27,7 +27,7 @@ public class NumberParsers {
     public static Parser anyLongBE() {
         return new Parser("NumberParsers.anyLongBE()") {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(8);
                 if (data.length != 4) {
                     return Result.builder()
@@ -51,7 +51,7 @@ public class NumberParsers {
     public static Parser anyLongLE() {
         return new Parser("NumberParsers.anyLongLE()") {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(8);
                 if (data.length != 4) {
                     return Result.builder()
@@ -76,7 +76,7 @@ public class NumberParsers {
     public static Parser anyIntBE() {
         return new Parser("NumberParsers.anyIntBE()") {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(4);
                 if (data.length != 4) {
                     return Result.builder()
@@ -100,7 +100,7 @@ public class NumberParsers {
     public static Parser anyIntLE() {
         return new Parser("NumberParsers.anyIntLE()") {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(4);
                 if (data.length != 4) {
                     return Result.builder()

@@ -1,5 +1,6 @@
 package com.jay.parser;
 
+import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
@@ -32,7 +33,9 @@ public class BaseTests {
 
     @Test
     public void testMany() {
-//        Result result1 = TextParsers.one('a').many().map(Mapper.toStr())
+
+//        Result result1 = TextParsers.one('a').many()
+//                .map(Mapper.toStr(), "[char]", "string")
 //                .runParser(Buffer.builder().data("aaabcd".getBytes()).build());
 //        assert result1.<String>get(0).equals("aaa");
 //        Result result2 = TextParsers.one('a').many().map(Mapper.toStr())
@@ -41,11 +44,11 @@ public class BaseTests {
 //        assert result2.<String>get(0).equals("");
 
         Result result3 = TextParsers.satisfy(Character::isLetter, "Character::isLetter")
-                .many().map(Mapper.toStr(), "List<Char>", "string")
+                .some().map(Mapper.toStr(), "[char]", "string")
                 .sepBy(TextParsers.one(',').ignore())
 //                .many()
                 .runParser(Buffer.builder()
-                        .data("a,b".getBytes())
+                        .data("".getBytes())
                         .build());
         assert result3.isSuccess();
         assert result3.<String>get(0).equals("a");
@@ -86,5 +89,17 @@ public class BaseTests {
         assert result1.isEmpty();
     }
 
+
+    @Test
+    public void testConnect() {
+        Parser parser = TextParsers.one('a')
+                .connect(() -> TextParsers.one('b'))
+                .connect(() -> TextParsers.one('c'));
+        Result result = parser.runParser(Buffer.builder().data("abcd".getBytes()).build());
+        assert result.isSuccess();
+        assert result.<Character>get(0).equals('a');
+        assert result.<Character>get(1).equals('b');
+        assert result.<Character>get(2).equals('c');
+    }
 
 }

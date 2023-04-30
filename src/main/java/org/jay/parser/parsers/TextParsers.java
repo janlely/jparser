@@ -1,8 +1,8 @@
 package org.jay.parser.parsers;
 
+import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
-import org.jay.parser.util.Buffer;
 import org.jay.parser.util.CharUtil;
 import org.jay.parser.util.ErrorUtil;
 import org.jay.parser.util.Mapper;
@@ -23,7 +23,7 @@ public class TextParsers {
     public static Parser empty() {
         return new Parser("TextParser.empty()") {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 return Result.builder()
                         .length(0)
                         .result(new ArrayList(0))
@@ -63,8 +63,8 @@ public class TextParsers {
      * @return
      */
     public static Parser one(char ch, Charset charset) {
-        return ByteParsers.bytes(String.valueOf(ch).getBytes(charset), String.format("== %c", ch))
-                .map(Mapper.toChar(charset));
+        return ByteParsers.bytes(String.valueOf(ch).getBytes(charset), String.format("== '%c'", ch))
+                .map(Mapper.toChar(charset), "byte[]", "char");
     }
 
     /**
@@ -94,7 +94,7 @@ public class TextParsers {
     public static Parser satisfy(Predicate<Character> p, Charset charset, String desc) {
         return new Parser(String.format("TextParser.satisfy<%s>", desc)) {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 byte[] bytes = buffer.headN(4);
                 Optional<Character> ch = CharUtil.read(bytes, charset);
                 if (ch.isPresent() && p.test(ch.get())) {
@@ -271,11 +271,11 @@ public class TextParsers {
     }
 
     /**
-     * Parse a whitespace character, including spaces, tabs, line feeds, etc.
+     * Parse whitespace characters, excluding newline characters.
      * @return
      */
     public static Parser white() {
-        return satisfy(c -> Character.isWhitespace(c), "white").ignore();
+        return satisfy(Character::isSpaceChar, "white").ignore();
     }
 
     /**
@@ -293,7 +293,7 @@ public class TextParsers {
     public static Parser eof() {
         return new Parser("TextParser.eof()") {
             @Override
-            public Result parse(Buffer buffer) {
+            public Result parse(IBuffer buffer) {
                 if (buffer.remaining() > 0) {
                     return Result.builder()
                             .errorMsg(ErrorUtil.error(buffer))

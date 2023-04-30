@@ -1,9 +1,7 @@
 package org.jay.parser.impl.xml;
 
 import org.jay.parser.Parser;
-import org.jay.parser.Result;
 import org.jay.parser.parsers.TextParsers;
-import org.jay.parser.util.Buffer;
 import org.jay.parser.util.Mapper;
 
 import java.util.List;
