@@ -23,6 +23,17 @@ Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jpar
     }
 ```
 * Parser a standard csv
+```java
+    public static Parser jsonParser() {
+        return stringParser()
+                .or(() -> objectParser().trim(true))
+                .or(() -> arrayParser().trim(true))
+                .or(() -> nullParser().trim(true))
+                .or(() -> boolParser().trim(true))
+                .or(() -> numberParser().trim(true))
+                .trim(true);
+    }
+```
 see [CSVParser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/csv/CsvParser.java)
 
 ## Sample Usage: implement a Json parser
@@ -31,4 +42,9 @@ see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/j
 
 ## Sample Usage: implement a XML parser
 see [XmlPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/xml/XmlParser.java)
+
+
+## Sample Usage: implement a Regex parser
+//TODO
+
 
