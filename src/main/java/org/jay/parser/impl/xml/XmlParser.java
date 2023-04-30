@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class XmlParser {
-    public Parser parser() {
+    public static Parser parser() {
         return nodeParser().connect(() -> TextParsers.eof());
     }
 
@@ -18,7 +18,7 @@ public class XmlParser {
      * Parse XmlNode
      * @return
      */
-    public Parser nodeParser() {
+    public static Parser nodeParser() {
         return emptyParser().or(() -> fullParser()).trim();
     }
 
@@ -26,7 +26,7 @@ public class XmlParser {
      * Parse content: <tag> ${content} </tag>
      * @return
      */
-    public Parser contentParser() {
+    public static Parser contentParser() {
         return contentEscapeParser().or(() ->
                 TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '<' && c != '>').trim()
         ).many().map(Mapper.toStr());
@@ -36,7 +36,7 @@ public class XmlParser {
      * Parse a full xml: <tag> content or children node </tag>
      * @return
      */
-    public Parser fullParser() {
+    public static Parser fullParser() {
         return headParser()
                 .connect(() -> nodeParser().some().or(() -> contentParser()))
                 .connectWith(result -> {
@@ -65,7 +65,7 @@ public class XmlParser {
      * Parse head: <name prop="value">
      * @return
      */
-    public Parser headParser() {
+    public static Parser headParser() {
         return TextParsers.one('<').ignore()
                 .connect(() -> tagParser())
                 .connect(() -> TextParsers.one('>').ignore())
@@ -84,7 +84,7 @@ public class XmlParser {
      * Parse empty tag: <name prop="value" />
      * @return
      */
-    public Parser emptyParser() {
+    public static Parser emptyParser() {
         return TextParsers.one('<').ignore()
                 .connect(() -> tagParser())
                 .connect(() -> TextParsers.string("/>").ignore())
@@ -102,7 +102,7 @@ public class XmlParser {
      * Parse tag: use by headParser and emptyParser
      * @return
      */
-    public Parser tagParser() {
+    public static Parser tagParser() {
         return nameParser()
                 .connect(() -> TextParsers.blank())
                 .connect(() -> propParser().sepBy(TextParsers.blank()).optional());
@@ -112,7 +112,7 @@ public class XmlParser {
      * Parse tag name or prop name
      * @return
      */
-    public Parser nameParser() {
+    public static Parser nameParser() {
         return TextParsers.satisfy(validName())
                 .some().map(Mapper.toStr());
     }
@@ -121,7 +121,7 @@ public class XmlParser {
      * Parse XmlProp
      * @return
      */
-    public Parser propParser() {
+    public static Parser propParser() {
         return nameParser()
                 .trim()
                 .connect(() -> TextParsers.one('=').ignore())
@@ -133,7 +133,7 @@ public class XmlParser {
      * Parse prop value
      * @return
      */
-    public Parser propValueParser() {
+    public static Parser propValueParser() {
         Parser singleQuote = TextParsers.one('\'').ignore()
                 .connect(() -> valueEscapeParser().or(() ->
                         TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '\'')
@@ -151,7 +151,7 @@ public class XmlParser {
      * Parse escape character in prop value
      * @return
      */
-    public Parser valueEscapeParser() {
+    public static Parser valueEscapeParser() {
         //TODO more escape char to be added
         return TextParsers.string(" &quot").map(Mapper.replace('"'));
     }
@@ -160,7 +160,7 @@ public class XmlParser {
      * Parse escape character in content
      * @return
      */
-    public Parser contentEscapeParser() {
+    public static Parser contentEscapeParser() {
         return TextParsers.string("&lt;").map(Mapper.replace('<')).or(() ->
                 TextParsers.string("&gt;").map(Mapper.replace('<')));
     }
@@ -169,7 +169,7 @@ public class XmlParser {
      * Check if a character is allowed in XML tag names
      * @return
      */
-    public Predicate<Character> validName() {
+    public static Predicate<Character> validName() {
         return c -> Character.isLetterOrDigit(c)
                 || Set.of('.','-','_',':').contains(c);
     }
