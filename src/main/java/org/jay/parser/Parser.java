@@ -3,6 +3,8 @@ package org.jay.parser;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.ErrorUtil;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -15,20 +17,31 @@ import java.util.function.Supplier;
  */
 public abstract class Parser {
     protected boolean ignore = false;
-    protected Queue<String> queue;
+    protected Deque<String> queue;
 
     public Parser(String label) {
         this.label = label;
-        this.queue = new LinkedList<>();
+        this.queue = new ArrayDeque<>();
         this.queue.add(label);
     }
 
-    public Parser(String label, Queue<String> queue) {
+    public Parser(String label, Deque<String> queue) {
         this.label = label;
         this.queue = queue;
         this.queue.add(label);
     }
 
+    /**
+     * Override default label
+     * @param label
+     * @return
+     */
+    public Parser label(String label) {
+        this.label = label;
+        this.queue.pollLast();
+        this.queue.add(label);
+        return this;
+    }
 
     private String label;
 
