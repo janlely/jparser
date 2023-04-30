@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 /**
  * This is the core class of Parser Combinator.
  */
-public abstract class Parser implements Cloneable {
+public abstract class Parser {
     protected boolean ignore = false;
     protected Queue<String> queue;
 
@@ -316,8 +316,7 @@ public abstract class Parser implements Cloneable {
      * @return
      */
     public Parser sepBy(Parser parser) {
-        Parser cloneThis = (Parser) this.clone();
-        return connect(() -> parser.connect(() -> cloneThis).many());
+        return connect(() -> parser.connect(() -> this).many());
     }
 
 
@@ -352,14 +351,5 @@ public abstract class Parser implements Cloneable {
      */
     public Parser optional() {
         return attempt(1);
-    }
-
-
-    @Override
-    @SneakyThrows
-    public Object clone() {
-        Parser cloned = (Parser) super.clone();
-        cloned.queue = new ArrayDeque<>(this.queue);
-        return cloned;
     }
 }
