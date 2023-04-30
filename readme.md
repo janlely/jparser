@@ -23,6 +23,9 @@ Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jpar
     }
 ```
 * Parser a standard csv
+see [CSVParser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/csv/CsvParser.java)
+
+## Sample Usage: implement a Json parser
 ```java
     public static Parser jsonParser() {
         return stringParser()
@@ -34,9 +37,6 @@ Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jpar
                 .trim(true);
     }
 ```
-see [CSVParser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/csv/CsvParser.java)
-
-## Sample Usage: implement a Json parser
 see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/json/JsonParser.java)
 
 
