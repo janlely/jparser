@@ -126,10 +126,10 @@ public class TextParsersTest {
 
     @Test
     public void testSpace() {
-        Result result1 = TextParsers.white().runParser(Buffer.builder()
+        Result result1 = TextParsers.space().runParser(Buffer.builder()
                 .data(" abdf".getBytes())
                 .build());
-        Result result2 = TextParsers.blank().connect(() -> TextParsers.string("hello"))
+        Result result2 = TextParsers.spaces().connect(() -> TextParsers.string("hello"))
                 .runParser(Buffer.builder()
                         .data("    hello".getBytes())
                         .build());
@@ -142,7 +142,7 @@ public class TextParsersTest {
     @Test
     public void testTrim() {
         Result result1 = TextParsers.string("hello")
-                .trim().runParser(Buffer.builder()
+                .trim(true).runParser(Buffer.builder()
                         .data("helloadd".getBytes())
                         .build());
         assert result1.isSuccess();
@@ -150,7 +150,7 @@ public class TextParsersTest {
 
     @Test
     public void testBlank() {
-        Result result1 = TextParsers.blank()
+        Result result1 = TextParsers.spaces()
                 .runParser(Buffer.builder()
                         .data("".getBytes())
                         .build());

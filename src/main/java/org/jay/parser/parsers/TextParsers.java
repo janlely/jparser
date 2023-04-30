@@ -274,15 +274,23 @@ public class TextParsers {
      * Parse whitespace characters, excluding newline characters.
      * @return
      */
-    public static Parser white() {
-        return satisfy(Character::isSpaceChar, "white").ignore();
+    public static Parser space() {
+        return satisfy(Character::isSpaceChar, "space exclude newline").ignore();
     }
 
     /**
      * Parse a sequence of whitespace.
      * @return
      */
-    public static Parser blank() {
+    public static Parser spaces() {
+        return space().many();
+    }
+
+    public static Parser white() {
+        return satisfy(Character::isWhitespace, "all white").ignore();
+    }
+
+    public static Parser whites() {
         return white().many();
     }
 

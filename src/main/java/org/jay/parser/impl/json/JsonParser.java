@@ -22,12 +22,12 @@ public class JsonParser {
      */
     public static Parser jsonParser() {
         return stringParser()
-                .or(() -> objectParser().trim())
-                .or(() -> arrayParser().trim())
-                .or(() -> nullParser().trim())
-                .or(() -> boolParser().trim())
-                .or(() -> numberParser().trim())
-                .trim();
+                .or(() -> objectParser().trim(true))
+                .or(() -> arrayParser().trim(true))
+                .or(() -> nullParser().trim(true))
+                .or(() -> boolParser().trim(true))
+                .or(() -> numberParser().trim(true))
+                .trim(true);
     }
 
     /**
@@ -71,7 +71,7 @@ public class JsonParser {
      * @return
      */
     public static Parser memberParser() {
-        return keyParser().trim()
+        return keyParser().trim(true)
                 .connect(() -> TextParsers.one(':').ignore())
                 .connect(() -> jsonParser())
                 .map((List kv) -> JsonMember.builder()
@@ -102,7 +102,7 @@ public class JsonParser {
                         .type(JsonType.STRING)
                         .value(s.get(0))
                         .build())
-                .trim();
+                .trim(true);
     }
 
     /**

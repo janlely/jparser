@@ -19,7 +19,7 @@ public class XmlParser {
      * @return
      */
     public static Parser nodeParser() {
-        return emptyParser().or(() -> fullParser()).trim();
+        return emptyParser().or(() -> fullParser()).trim(true);
     }
 
     /**
@@ -28,7 +28,7 @@ public class XmlParser {
      */
     public static Parser contentParser() {
         return contentEscapeParser().or(() ->
-                TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '<' && c != '>').trim()
+                TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '<' && c != '>').trim(true)
         ).many().map(Mapper.toStr());
     }
 
@@ -42,7 +42,7 @@ public class XmlParser {
                 .connectWith(result -> {
                     String name = result.<XmlNode>get(0).getName();
                     return TextParsers.string("</").ignore()
-                            .connect(() -> TextParsers.string(name).trim())
+                            .connect(() -> TextParsers.string(name).trim(true))
                             .connect(() -> TextParsers.string(">").ignore())
                             .ignore();
                 }).map(values -> {
@@ -104,8 +104,8 @@ public class XmlParser {
      */
     public static Parser tagParser() {
         return nameParser()
-                .connect(() -> TextParsers.blank())
-                .connect(() -> propParser().sepBy(TextParsers.blank()).optional());
+                .connect(() -> TextParsers.spaces())
+                .connect(() -> propParser().sepBy(TextParsers.spaces()).optional());
     }
 
     /**
@@ -123,7 +123,7 @@ public class XmlParser {
      */
     public static Parser propParser() {
         return nameParser()
-                .trim()
+                .trim(true)
                 .connect(() -> TextParsers.one('=').ignore())
                 .connect(() -> propValueParser())
                 .map(kv -> XmlProp.builder().name((String) kv.get(0)).value((String) kv.get(1)).build());

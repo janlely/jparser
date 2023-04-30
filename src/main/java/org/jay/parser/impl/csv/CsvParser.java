@@ -10,7 +10,7 @@ public class CsvParser {
         return lineParser().sepBy(TextParsers.one('\n').ignore());
     }
     public static Parser lineParser() {
-        return field().sepBy(TextParsers.one(',').ignore()).trim();
+        return field().sepBy(TextParsers.one(',').ignore()).trim(false);
     }
 
     public static Parser field() {

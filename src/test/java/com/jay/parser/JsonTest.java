@@ -10,7 +10,7 @@ public class JsonTest {
     @Test
     public void testKeyParser() {
         String src = "\"hello\"";
-        Result result1 = JsonParser.keyParser().trim().runParser(Buffer.builder().data(src.getBytes()).build());
+        Result result1 = JsonParser.keyParser().trim(true).runParser(Buffer.builder().data(src.getBytes()).build());
         assert result1.isSuccess();
     }
 

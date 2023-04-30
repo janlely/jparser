@@ -1,10 +1,8 @@
 package org.jay.parser;
 
-import lombok.SneakyThrows;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.ErrorUtil;
 
-import java.util.ArrayDeque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -305,9 +303,13 @@ public abstract class Parser {
      * Trim leading and trailing whitespace.
      * @return
      */
-    public Parser trim() {
-        return TextParsers.blank().connect(() -> this)
-                .connect(() -> TextParsers.blank());
+    public Parser trim(boolean includeNewline) {
+        if (includeNewline) {
+            return TextParsers.whites().connect(() -> this)
+                    .connect(() -> TextParsers.whites());
+        }
+        return TextParsers.spaces().connect(() -> this)
+                .connect(() -> TextParsers.spaces());
     }
 
     /**
