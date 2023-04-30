@@ -3,6 +3,8 @@ package org.jay.parser.util;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Optional;
+
 @Builder
 public class Buffer {
     private byte[] data;
@@ -37,11 +39,11 @@ public class Buffer {
         this.pos = pos;
     }
 
-    public byte head() {
+    public Optional<Byte> head() {
         if (this.pos < this.data.length) {
-            return this.data[this.pos];
+            return Optional.of(this.data[this.pos]);
         }
-        throw new RuntimeException("no more data to parse");
+        return Optional.empty();
     }
 
     public byte[] content() {

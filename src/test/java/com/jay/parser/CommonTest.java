@@ -54,7 +54,7 @@ public class CommonTest {
     @Test
     public void testJson() {
         String jsonStr = "  {\"hello\":\"world\",\"array\":[\"a\",{\"b\":\"c\"},null,123.4],\"name\":\"jay\"}  ";
-        Result result = new JsonParser().runParser(Buffer.builder()
+        Result result = new JsonParser().jsonParser().runParser(Buffer.builder()
                         .data(jsonStr.getBytes())
                         .build());
         System.out.println("hello");

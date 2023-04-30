@@ -25,13 +25,13 @@ public class NumberParsers {
      * @return
      */
     public static Parser anyLongBE() {
-        return new Parser() {
+        return new Parser("NumberParsers.anyLongBE()") {
             @Override
             public Result parse(Buffer buffer) {
                 byte[] data = buffer.headN(8);
                 if (data.length != 4) {
                     return Result.builder()
-                            .errorMsg(ErrorUtil.error(buffer.getPos()))
+                            .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 buffer.forward(8);
@@ -49,13 +49,13 @@ public class NumberParsers {
      * @return
      */
     public static Parser anyLongLE() {
-        return new Parser() {
+        return new Parser("NumberParsers.anyLongLE()") {
             @Override
             public Result parse(Buffer buffer) {
                 byte[] data = buffer.headN(8);
                 if (data.length != 4) {
                     return Result.builder()
-                            .errorMsg(ErrorUtil.error(buffer.getPos()))
+                            .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 buffer.forward(8);
@@ -74,13 +74,13 @@ public class NumberParsers {
      * @return
      */
     public static Parser anyIntBE() {
-        return new Parser() {
+        return new Parser("NumberParsers.anyIntBE()") {
             @Override
             public Result parse(Buffer buffer) {
                 byte[] data = buffer.headN(4);
                 if (data.length != 4) {
                     return Result.builder()
-                            .errorMsg(ErrorUtil.error(buffer.getPos()))
+                            .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 ByteBuffer bf = ByteBuffer.wrap(data);
@@ -98,13 +98,13 @@ public class NumberParsers {
      * @return
      */
     public static Parser anyIntLE() {
-        return new Parser() {
+        return new Parser("NumberParsers.anyIntLE()") {
             @Override
             public Result parse(Buffer buffer) {
                 byte[] data = buffer.headN(4);
                 if (data.length != 4) {
                     return Result.builder()
-                            .errorMsg(ErrorUtil.error(buffer.getPos()))
+                            .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 buffer.forward(4);

@@ -1,22 +1,25 @@
 package org.jay.parser.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.util.Optional;
 
+@Slf4j
 public class CharUtil {
 
-    public static char read(byte[] bytes, Charset charset) throws CharacterCodingException {
+    public static Optional<Character> read(byte[] bytes, Charset charset) {
         try {
             CharsetDecoder decoder = charset.newDecoder();
             ByteBuffer bf = ByteBuffer.wrap(bytes);
             CharBuffer cb = CharBuffer.allocate(1);
             decoder.decode(bf, cb, true);
-            return cb.flip().charAt(0);
+            return Optional.of(cb.flip().charAt(0));
         } catch (Exception e) {
-            throw new CharacterCodingException();
+            return Optional.empty();
         }
     }
 

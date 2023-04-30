@@ -1,6 +1,5 @@
 package org.jay.parser.util;
 
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.function.Function;
@@ -19,13 +18,8 @@ public class Mapper {
 
     //List<byte[]> -> char
     public static Function<List, Character> toChar(Charset charset) {
-        return bytes -> (Character) bytes.stream().map(bs -> {
-            try {
-                return CharUtil.read((byte[]) bs, charset);
-            } catch (CharacterCodingException e) {
-                return null;
-            }
-        }).findFirst().get();
+        return bytes -> (Character) bytes.stream().map(bs ->
+                CharUtil.read((byte[]) bs, charset).get()).findFirst().get();
     }
 
     //replace parse result with given value

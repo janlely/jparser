@@ -1,11 +1,19 @@
 package org.jay.parser;
 
+import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
 import org.jay.parser.util.ErrorUtil;
 
+import javax.naming.PartialResultException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.Stack;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -15,10 +23,27 @@ import java.util.function.Supplier;
  */
 public abstract class Parser {
     protected boolean ignore = false;
+    protected Deque<String> queue;
+
+    public Parser(String label) {
+        this.label = label;
+        this.queue = new ArrayDeque<>();
+        this.queue.add(label);
+    }
+
+    public Parser(String label, Deque<String> queue) {
+        this.label = label;
+        this.queue = queue;
+        this.queue.add(label);
+    }
+
+
+    private String label;
 
     public boolean isIgnore() {
         return this.ignore;
     }
+
 
     /**
      * Parse, but ignore the parsing result.
@@ -30,15 +55,19 @@ public abstract class Parser {
     }
 
     public Result runParser(Buffer buffer) {
-        Result result = parse(buffer);
-        if (result.isError()) {
+        try {
+            Result result = parse(buffer);
+            if (result.isError()) {
+                return result;
+            }
+            if (isIgnore()) {
+                result.clear();
+                return result;
+            }
             return result;
+        } finally {
+            this.queue.poll();
         }
-        if (isIgnore()) {
-            result.clear();
-            return result;
-        }
-        return result;
     }
     public abstract Result parse(Buffer buffer);
 
@@ -48,19 +77,23 @@ public abstract class Parser {
      * @return
      */
     public Parser connectWith(Function<Result, Parser> generator) {
-        return new Parser() {
+        return new Parser(this.label + "--", this.queue) {
             @Override
             public Result parse(Buffer buffer) {
                 Result step1 = Parser.this.runParser(buffer);
                 if (step1.isError()) {
                     return Result.builder().errorMsg(step1.errorMsg).build();
                 }
-                Result step2 = generator.apply(step1).runParser(buffer);
+                Parser theParser = generator.apply(step1);
+                while(!theParser.queue.isEmpty()) {
+                    this.queue.addFirst(theParser.queue.getLast());
+                }
+                Result step2 = theParser.runParser(buffer);
                 if (step2.isError()) {
                     buffer.backward(step1.length);
                     return Result.builder().errorMsg(step2.errorMsg).build();
                 }
-                Result result = Result.builder().result(new ArrayList()).length(0).build();
+                Result result = Result.empty();
                 result.length += step1.length + step2.length;
                 result.addAll(step1.getResult());
                 result.addAll(step2.getResult());
@@ -76,14 +109,18 @@ public abstract class Parser {
      * @return
      */
     public Parser connect(Supplier<Parser> parser) {
-        return new Parser() {
+        return new Parser(this.label + "--", this.queue) {
             @Override
             public Result parse(Buffer buffer) {
                 Result step1 = Parser.this.runParser(buffer);
                 if (step1.isError()) {
                     return Result.builder().errorMsg(step1.errorMsg).build();
                 }
-                Result step2 = parser.get().runParser(buffer);
+                Parser theParser = parser.get();
+                while(!theParser.queue.isEmpty()) {
+                    this.queue.addFirst(theParser.queue.getLast());
+                }
+                Result step2 = theParser.runParser(buffer);
                 if (step2.isError()) {
                     buffer.backward(step1.length);
                     return Result.builder().errorMsg(step2.errorMsg).build();
@@ -103,7 +140,7 @@ public abstract class Parser {
      * @return
      */
     public Parser must(Predicate<Result> p) {
-        return new Parser() {
+        return new Parser(String.format("<%s>", this.label), this.queue) {
             @Override
             public Result parse(Buffer buffer) {
                 int pos = buffer.getPos();
@@ -113,7 +150,7 @@ public abstract class Parser {
                 }
                 buffer.jump(pos);
                 return Result.builder()
-                        .errorMsg(ErrorUtil.error(pos))
+                        .errorMsg(ErrorUtil.error(buffer))
                         .build();
             }
         };
@@ -124,7 +161,30 @@ public abstract class Parser {
      * @return
      */
     public Parser some() {
-        return connect(() -> many());
+//        return connect(() -> many());
+        return new Parser(this.label + "+", this.queue) {
+            @Override
+            public Result parse(Buffer buffer) {
+                Result tmp = Parser.this.runParser(buffer);
+                if (tmp.isError()) {
+                    return tmp;
+                }
+                String first = this.queue.getFirst();
+                Result result = Result.empty();
+                result.length += tmp.length;
+                result.addAll(tmp.getResult());
+                while(true) {
+                    this.queue.addFirst(first);
+                    tmp = Parser.this.runParser(buffer);
+                    if (tmp.isError()) {
+                        break;
+                    }
+                    result.length += tmp.length;
+                    result.addAll(tmp.getResult());
+                }
+                return result;
+            }
+        };
     }
 
     /**
@@ -132,21 +192,25 @@ public abstract class Parser {
      * @return
      */
     public Parser many() {
-        return new Parser() {
+        return new Parser(this.label + "*", this.queue) {
             @Override
             public Result parse(Buffer buffer) {
-                Result result = Result.builder().result(new ArrayList(0)).length(0).build();
-                Result first = Parser.this.runParser(buffer);
-                if (first.isError()) {
+                String first = this.queue.getFirst();
+                Result result = Result.empty();
+                Result tmp = Parser.this.runParser(buffer);
+                if (tmp.isError()) {
                     return result;
                 }
-                result.length += first.length;
-                result.addAll(first.getResult());
-                Result tmp = Parser.this.runParser(buffer);
-                while(tmp.isSuccess()) {
+                result.length += tmp.length;
+                result.addAll(tmp.getResult());
+                while(true) {
+                    this.queue.addFirst(first);
+                    tmp = Parser.this.runParser(buffer);
+                    if (tmp.isError()) {
+                        break;
+                    }
                     result.length += tmp.length;
                     result.addAll(tmp.getResult());
-                    tmp = Parser.this.runParser(buffer);
                 }
                 return result;
             }
@@ -169,15 +233,24 @@ public abstract class Parser {
      * @return
      */
     public Parser attempt(int n) {
-        return new Parser() {
+        return new Parser(String.format("%s{0,%d}", this.label, n), this.queue) {
             @Override
             public Result parse(Buffer buffer) {
+                String first = this.queue.getFirst();
                 Result result = Result.empty();
                 if (n <= 0) {
                     return result;
                 }
-                for (int i = 0; i < n; i++) {
-                    Result tmp = Parser.this.runParser(buffer);
+                Result tmp = Parser.this.runParser(buffer);
+                if (tmp.isError()) {
+                    return result;
+                }
+                result.length += tmp.length;
+                result.addAll(tmp.getResult());
+                int i = 1;
+                while(i++ < n) {
+                    this.queue.addFirst(first);
+                    tmp = Parser.this.runParser(buffer);
                     if (tmp.isError()) {
                         break;
                     }
@@ -195,17 +268,26 @@ public abstract class Parser {
      * @return
      */
     public Parser repeat(int n) {
-        return new Parser() {
+        return new Parser(String.format("%s{%d}", this.label, n), this.queue) {
             @Override
             public Result parse(Buffer buffer) {
+                String first = this.queue.getFirst();
                 Result result = Result.empty();
                 if (n <= 0) {
                     return result;
                 }
-                for(int i = 0; i < n; i++) {
-                    Result tmp = Parser.this.runParser(buffer);
+                Result tmp = Parser.this.runParser(buffer);
+                if (tmp.isError()) {
+                    return result;
+                }
+                result.length += tmp.length;
+                result.addAll(tmp.getResult());
+                int i = 1;
+                while(i++ < n) {
+                    this.queue.addFirst(first);
+                    tmp = Parser.this.runParser(buffer);
                     if (tmp.isError()) {
-                        return Result.builder().errorMsg(tmp.errorMsg).build();
+                        return tmp;
                     }
                     result.length += tmp.length;
                     result.addAll(tmp.getResult());
@@ -221,10 +303,19 @@ public abstract class Parser {
      * @return
      */
     public Parser map(Function<List, ?> mapper) {
-        return new Parser() {
+        return map(mapper, "?", "?");
+    }
+
+    /**
+     * Map the result to another value.
+     * @param mapper
+     * @return
+     */
+    public Parser map(Function<List, ?> mapper, String from, String to) {
+        return new Parser(String.format("(%s -> %s) <$> %s", from, to, this.label), this.queue) {
             @Override
             public Result parse(Buffer buffer) {
-                Result result = Parser.this.parse(buffer);
+                Result result = Parser.this.runParser(buffer);
                 if (result.isError()) {
                     return result;
                 }
@@ -239,7 +330,8 @@ public abstract class Parser {
      * @return
      */
     public Parser trim() {
-        return TextParsers.blank().connect(() -> this).connect(() -> TextParsers.blank());
+        return TextParsers.blank().connect(() -> this)
+                .connect(() -> TextParsers.blank());
     }
 
     /**
@@ -258,14 +350,18 @@ public abstract class Parser {
      * @return
      */
     public Parser or(Supplier<Parser> parser) {
-        return new Parser() {
+        return new Parser(this.label + "--?", this.queue) {
             @Override
             public Result parse(Buffer buffer) {
                 Result result = Parser.this.runParser(buffer);
                 if (result.isSuccess()) {
                     return result;
                 }
-                Result result2 = parser.get().runParser(buffer);
+                Parser theParser = parser.get();
+                while(!theParser.queue.isEmpty()) {
+                    this.queue.addFirst(theParser.queue.getLast());
+                }
+                Result result2 = theParser.runParser(buffer);
                 if (result2.isSuccess()) {
                     return result2;
                 }

@@ -7,11 +7,11 @@ import org.jay.parser.util.CharUtil;
 import org.jay.parser.util.ErrorUtil;
 import org.jay.parser.util.Mapper;
 
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class TextParsers {
@@ -21,7 +21,7 @@ public class TextParsers {
      * @return
      */
     public static Parser empty() {
-        return new Parser() {
+        return new Parser("TextParser.empty()") {
             @Override
             public Result parse(Buffer buffer) {
                 return Result.builder()
@@ -63,7 +63,7 @@ public class TextParsers {
      * @return
      */
     public static Parser one(char ch, Charset charset) {
-        return ByteParsers.bytes(String.valueOf(ch).getBytes(charset))
+        return ByteParsers.bytes(String.valueOf(ch).getBytes(charset), String.format("== %c", ch))
                 .map(Mapper.toChar(charset));
     }
 
@@ -73,7 +73,16 @@ public class TextParsers {
      * @return
      */
     public static Parser satisfy(Predicate<Character> p) {
-        return satisfy(p, StandardCharsets.UTF_8);
+        return satisfy(p, StandardCharsets.UTF_8, "");
+    }
+
+    /**
+     * Parse a character that satisfies a condition , using UTF-8 encoding.
+     * @param p
+     * @return
+     */
+    public static Parser satisfy(Predicate<Character> p, String desc) {
+        return satisfy(p, StandardCharsets.UTF_8, desc);
     }
 
     /**
@@ -82,26 +91,22 @@ public class TextParsers {
      * @param charset
      * @return
      */
-    public static Parser satisfy(Predicate<Character> p, Charset charset) {
-        return new Parser() {
+    public static Parser satisfy(Predicate<Character> p, Charset charset, String desc) {
+        return new Parser(String.format("TextParser.satisfy<%s>", desc)) {
             @Override
             public Result parse(Buffer buffer) {
                 byte[] bytes = buffer.headN(4);
-                try {
-                    char ch = CharUtil.read(bytes, charset);
-                    if (p.test(ch)) {
-                        int len = String.valueOf(ch).getBytes(charset).length;
-                        buffer.forward(len);
-                        return Result.builder()
-                                .result(List.of(ch))
-                                .length(len)
-                                .build();
-                    }
-                } catch (CharacterCodingException e) {
-                    //Do Nothing
+                Optional<Character> ch = CharUtil.read(bytes, charset);
+                if (ch.isPresent() && p.test(ch.get())) {
+                    int len = String.valueOf(ch.get()).getBytes(charset).length;
+                    buffer.forward(len);
+                    return Result.builder()
+                            .result(List.of(ch.get()))
+                            .length(len)
+                            .build();
                 }
                 return Result.builder()
-                        .errorMsg(ErrorUtil.error(buffer.getPos()))
+                        .errorMsg(ErrorUtil.error(buffer))
                         .build();
             }
         };
@@ -164,7 +169,7 @@ public class TextParsers {
      * @return
      */
     public static Parser any(Charset charset) {
-        return satisfy(__ -> true, charset);
+        return satisfy(__ -> true, charset, String.format("any char of %s", charset.name()));
     }
 
     /**
@@ -212,7 +217,11 @@ public class TextParsers {
      * @return
      */
     public static Parser takeWhile(Predicate<Character> p) {
-        return takeWhile(p, StandardCharsets.UTF_8);
+        return takeWhile(p, "");
+    }
+
+    public static Parser takeWhile(Predicate<Character> p, String desc) {
+        return takeWhile(p, StandardCharsets.UTF_8, desc);
     }
 
     /**
@@ -220,8 +229,8 @@ public class TextParsers {
      * @param p
      * @return
      */
-    public static Parser takeWhile(Predicate<Character> p, Charset charset) {
-        return satisfy(p, charset).many().map(Mapper.toStr());
+    public static Parser takeWhile(Predicate<Character> p, Charset charset, String desc) {
+        return satisfy(p, charset, desc).many().map(Mapper.toStr());
     }
 
     /**
@@ -230,7 +239,25 @@ public class TextParsers {
      * @return
      */
     public static Parser skipWhile(Predicate<Character> p) {
-        return takeWhile(p, StandardCharsets.UTF_8).ignore();
+        return takeWhile(p, StandardCharsets.UTF_8, "").ignore();
+    }
+
+    /**
+     * Skip characters that satisfy a condition according to the given encoding
+     * @param p
+     * @return
+     */
+    public static Parser skipWhile(Predicate<Character> p, String desc) {
+        return takeWhile(p, StandardCharsets.UTF_8, desc).ignore();
+    }
+    /**
+     * Skip characters that satisfy a condition and UTF-8 characters.
+     * @param p
+     * @param charset
+     * @return
+     */
+    public static Parser skipWhile(Predicate<Character> p, Charset charset) {
+        return takeWhile(p, charset, "").ignore();
     }
 
     /**
@@ -239,8 +266,8 @@ public class TextParsers {
      * @param charset
      * @return
      */
-    public static Parser skipWhile(Predicate<Character> p, Charset charset) {
-        return takeWhile(p, charset).ignore();
+    public static Parser skipWhile(Predicate<Character> p, Charset charset, String desc) {
+        return takeWhile(p, charset, desc).ignore();
     }
 
     /**
@@ -248,7 +275,7 @@ public class TextParsers {
      * @return
      */
     public static Parser white() {
-        return satisfy(c -> Character.isWhitespace(c)).ignore();
+        return satisfy(c -> Character.isWhitespace(c), "white").ignore();
     }
 
     /**
@@ -264,12 +291,12 @@ public class TextParsers {
      * @return
      */
     public static Parser eof() {
-        return new Parser() {
+        return new Parser("TextParser.eof()") {
             @Override
             public Result parse(Buffer buffer) {
                 if (buffer.remaining() > 0) {
                     return Result.builder()
-                            .errorMsg(ErrorUtil.error(buffer.getPos()))
+                            .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 return Result.empty();

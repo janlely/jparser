@@ -11,10 +11,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class XmlParser extends Parser {
-    @Override
-    public Result parse(Buffer buffer) {
-        return nodeParser().connect(() -> TextParsers.eof()).runParser(buffer);
+public class XmlParser {
+    public Parser parser() {
+        return nodeParser().connect(() -> TextParsers.eof());
     }
 
     /**

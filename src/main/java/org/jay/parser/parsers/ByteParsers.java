@@ -8,23 +8,28 @@ import org.jay.parser.util.Mapper;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class ByteParsers {
+
+    public static Parser bytes(byte[] data) {
+        return bytes(data, "");
+    }
 
     /**
      * Parse a specified character array.
      * @param data
      * @return
      */
-    public static Parser bytes(byte[] data) {
-        return new Parser() {
+    public static Parser bytes(byte[] data, String desc) {
+        return new Parser(String.format("ByteParser.bytes<%s>", desc)) {
             @Override
             public Result parse(Buffer buffer) {
                 byte[] bs = buffer.headN(data.length);
                 if (!Arrays.equals(data, bs)) {
                     return Result.builder()
-                            .errorMsg(ErrorUtil.error(buffer.getPos()))
+                            .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 buffer.forward(bs.length);
@@ -43,13 +48,13 @@ public class ByteParsers {
      * @return
      */
     public static Parser satisfy(Predicate<Byte> p) {
-        return new Parser() {
+        return new Parser("ByteParser.satisfy()") {
             @Override
             public Result parse(Buffer buffer) {
-                byte b = buffer.head();
-                if (!p.test(b)) {
+                Optional<Byte> b = buffer.head();
+                if (b.isEmpty() || !p.test(b.get())) {
                     return Result.builder()
-                            .errorMsg(ErrorUtil.error(buffer.getPos()))
+                            .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 buffer.forward(1);

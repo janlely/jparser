@@ -1,30 +1,42 @@
 package org.jay.parser.impl.json;
 
 import org.jay.parser.Parser;
-import org.jay.parser.Result;
 import org.jay.parser.parsers.TextParsers;
-import org.jay.parser.util.Buffer;
 import org.jay.parser.util.Mapper;
 
 import java.util.List;
 
-public class JsonParser extends Parser{
+public class JsonParser {
 
-    @Override
-    public Result parse(Buffer buffer) {
-        Result result = valueParser().trim()
-                .connect(() -> TextParsers.eof())
-                .parse(buffer);
-        return result;
+    /**
+     * jsonParser + eof
+     * @return
+     */
+    public static Parser parser() {
+        return jsonParser().connect(() -> TextParsers.eof());
+    }
+
+    /**
+     * jsonParser
+     * @return
+     */
+    public static Parser jsonParser() {
+        return stringParser()
+                .or(() -> objectParser().trim())
+                .or(() -> arrayParser().trim())
+                .or(() -> nullParser().trim())
+                .or(() -> boolParser().trim())
+                .or(() -> numberParser().trim())
+                .trim();
     }
 
     /**
      * parse json array
      * @return
      */
-    public Parser arrayParser() {
+    public static Parser arrayParser() {
         return TextParsers.one('[').ignore()
-                .connect(() -> valueParser().sepBy(TextParsers.one(',').ignore()))
+                .connect(() -> jsonParser().sepBy(TextParsers.one(',').ignore()))
                 .connect(() -> TextParsers.one(']').ignore())
                 .map(ary -> JsonValue.builder()
                         .type(JsonType.ARRAY)
@@ -36,25 +48,32 @@ public class JsonParser extends Parser{
      * parse json object
      * @return
      */
-    public Parser objectParser() {
-        Parser members = member().sepBy(TextParsers.one(',').ignore())
+    public static Parser objectParser() {
+        return TextParsers.one('{').ignore()
+                .connect(() -> membersParser())
+                .connect(() -> TextParsers.one('}').ignore());
+    }
+
+    /**
+     * parse one member
+     * @return
+     */
+    public static Parser membersParser() {
+        return memberParser().sepBy(TextParsers.one(',').ignore())
                 .map(mbs -> JsonValue.builder()
                         .type(JsonType.OBJECT)
                         .value(new JsonObject().addAll(mbs))
                         .build());
-        return TextParsers.one('{').ignore()
-                .connect(() -> members)
-                .connect(() -> TextParsers.one('}').ignore());
     }
 
     /**
      * parse member of json object
      * @return
      */
-    public Parser member() {
-        return stringParser().trim()
+    public static Parser memberParser() {
+        return keyParser().trim()
                 .connect(() -> TextParsers.one(':').ignore())
-                .connect(() -> valueParser())
+                .connect(() -> jsonParser())
                 .map((List kv) -> JsonMember.builder()
                         .key((String) kv.get(0))
                         .value((JsonValue) kv.get(1))
@@ -65,23 +84,32 @@ public class JsonParser extends Parser{
      * parse json string
      * @return
      */
-    public Parser stringParser() {
+    public static Parser keyParser() {
+        return TextParsers.one('"').ignore()
+                .connect(() -> charParser().many().map(Mapper.toStr()))
+                .connect(() -> TextParsers.one('"').ignore());
+    }
+
+    public static Parser charParser() {
         Parser escape = TextParsers.one('\\').ignore()
                 .connect(() -> TextParsers.one('"')
                         .or(() -> TextParsers.one('\\')));
-        Parser charParser = escape.or(() ->
-                TextParsers.satisfy(c -> c != '"')
-        );
-        return TextParsers.one('"').ignore()
-                .connect(() -> charParser.many().map(Mapper.toStr()))
-                .connect(() -> TextParsers.one('"').ignore());
+        return escape.or(() -> TextParsers.satisfy(c -> c != '"'));
+    }
+
+    public static Parser stringParser() {
+        return keyParser().map(s -> JsonValue.builder()
+                        .type(JsonType.STRING)
+                        .value(s.get(0))
+                        .build())
+                .trim();
     }
 
     /**
      * parse json null
      * @return
      */
-    public Parser nullParser() {
+    public static Parser nullParser() {
         return TextParsers.string("null", true).map(__ ->
                 JsonValue.builder()
                         .type(JsonType.NULL)
@@ -93,22 +121,21 @@ public class JsonParser extends Parser{
      * parse json number
      * @return
      */
-    public Parser numberParser() {
+    public static Parser numberParser() {
         return TextParsers.satisfy(c -> Character.isDigit(c) || c == '-' || c == '.' || c == 'e')
-                .many()
+                .some()
                 .map(Mapper.toStr())
                 .map(ss -> JsonValue.builder()
                         .type(JsonType.NUMBER)
                         .value(Double.parseDouble((String) ss.get(0)))
                         .build());
-
     }
 
     /**
      * parse json bool
      * @return
      */
-    public Parser boolParser() {
+    public static Parser boolParser() {
         Parser trueValue = TextParsers.string("true", true).map(__ ->
                 JsonValue.builder()
                         .type(JsonType.BOOL)
@@ -122,40 +149,4 @@ public class JsonParser extends Parser{
         return trueValue.or(() -> falseValue);
     }
 
-    /**
-     * core json parser
-     * @return
-     */
-    public Parser valueParser() {
-        return new Parser() {
-            @Override
-            public Result parse(Buffer buffer) {
-                if (buffer.remaining() <= 0) {
-                    return Result.builder().errorMsg("no more data to parser").build();
-                }
-                byte head = buffer.head();
-                switch (head) {
-                    case '"' :
-                        return stringParser().map(s -> JsonValue.builder()
-                                .type(JsonType.STRING)
-                                .value(s.get(0))
-                                .build()).trim().runParser(buffer);
-                    case '{' :
-                        return objectParser().trim().runParser(buffer);
-                    case '[' :
-                        return arrayParser().trim().runParser(buffer);
-                    case 'n' :
-                    case 'N' :
-                        return nullParser().trim().runParser(buffer);
-                    case 't':
-                    case 'T':
-                    case 'f':
-                    case 'F':
-                        return boolParser().trim().runParser(buffer);
-                    default:
-                        return numberParser().trim().runParser(buffer);
-                }
-            }
-        };
-    }
 }

@@ -138,4 +138,22 @@ public class TextParsersTest {
         assert result2.isSuccess();
         assert result2.<String>get(0).equals("hello");
     }
+
+    @Test
+    public void testTrim() {
+        Result result1 = TextParsers.string("hello")
+                .trim().runParser(Buffer.builder()
+                        .data("helloadd".getBytes())
+                        .build());
+        assert result1.isSuccess();
+    }
+
+    @Test
+    public void testBlank() {
+        Result result1 = TextParsers.blank()
+                .runParser(Buffer.builder()
+                        .data("".getBytes())
+                        .build());
+        assert result1.isSuccess();
+    }
 }
