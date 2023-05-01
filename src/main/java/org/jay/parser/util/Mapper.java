@@ -7,9 +7,17 @@ import java.util.stream.Collectors;
 
 public class Mapper {
 
-    //List<Character> -> String
+    //[Character] -> String
     public static Function<List, ?> toStr() {
         return chars -> chars.stream().map(String::valueOf).collect(Collectors.joining());
+    }
+
+    // [String](1)-> Int
+    public static Function<List, ?> toInt() {
+        return str -> {
+            assert str.size() == 1;
+            return Integer.parseInt(String.valueOf(str.get(0)));
+        };
     }
 
     public static Function<List, ?> toBytes() {

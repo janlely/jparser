@@ -16,21 +16,6 @@ import java.util.function.Predicate;
 
 public class TextParsers {
 
-    /**
-     * Do nothing but return success
-     * @return
-     */
-    public static Parser empty() {
-        return new Parser("TextParser.empty()") {
-            @Override
-            public Result parse(IBuffer buffer) {
-                return Result.builder()
-                        .length(0)
-                        .result(new ArrayList(0))
-                        .build();
-            }
-        };
-    }
 
     /**
      * Parse a character using UTF-8 encoding.
@@ -132,7 +117,7 @@ public class TextParsers {
         if (!ignoreCase) {
             return string(value, StandardCharsets.UTF_8);
         }
-        Parser result = empty();
+        Parser result = Parser.empty();
         for(int i = 0; i < value.length(); i++) {
             int idx = i;
             result = result.connect(() -> one(value.charAt(idx), true));
@@ -147,7 +132,7 @@ public class TextParsers {
      * @return
      */
     public static Parser string(String value, Charset charset) {
-        Parser result = empty();
+        Parser result = Parser.empty();
         for(int i = 0; i < value.length(); i++) {
             int idx = i;
             result = result.connect(() -> one(value.charAt(idx), charset));
@@ -311,6 +296,5 @@ public class TextParsers {
             }
         };
     }
-
 
 }

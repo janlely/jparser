@@ -4,6 +4,7 @@ import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.ErrorUtil;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -366,5 +367,22 @@ public abstract class Parser {
      */
     public Parser optional() {
         return attempt(1);
+    }
+
+
+    /**
+     * Do nothing but return success
+     * @return
+     */
+    public static Parser empty() {
+        return new Parser("TextParser.empty()") {
+            @Override
+            public Result parse(IBuffer buffer) {
+                return Result.builder()
+                        .length(0)
+                        .result(new ArrayList(0))
+                        .build();
+            }
+        };
     }
 }

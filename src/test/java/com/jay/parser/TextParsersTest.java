@@ -1,5 +1,6 @@
 package com.jay.parser;
 
+import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
@@ -9,7 +10,7 @@ public class TextParsersTest {
 
     @Test
     public void testEmpty() {
-        Result result = TextParsers.empty().runParser(Buffer.builder()
+        Result result = Parser.empty().runParser(Buffer.builder()
                 .data("hello".getBytes())
                 .build());
         assert  result.getResult().isEmpty();
