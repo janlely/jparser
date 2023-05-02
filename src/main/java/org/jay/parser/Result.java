@@ -54,4 +54,10 @@ public class Result {
     public void map(Function<List, ?> mapper) {
         this.result = List.of(mapper.apply(this.result));
     }
+
+    public static Result reachEnd() {
+        return Result.builder()
+                .errorMsg("no more data to parse")
+                .build();
+    }
 }

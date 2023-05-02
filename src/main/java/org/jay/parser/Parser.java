@@ -1,5 +1,6 @@
 package org.jay.parser;
 
+import lombok.Getter;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.ErrorUtil;
 
@@ -19,6 +20,14 @@ import java.util.function.Supplier;
 public abstract class Parser {
     protected boolean ignore = false;
     protected Deque<String> queue;
+
+    @Getter
+    private boolean isKiller;
+
+    public Parser killer() {
+        this.isKiller = true;
+        return this;
+    }
 
     public Parser(String label) {
         this.label = label;
@@ -382,6 +391,33 @@ public abstract class Parser {
                         .length(0)
                         .result(new ArrayList(0))
                         .build();
+            }
+        };
+    }
+
+    /**
+     * while(buffer.remaining()) {
+     *     Result result = parser.runParser(buffer);
+     * }
+     * @param stripper
+     * @param parser
+     * @return
+     */
+    public static Parser scan(Parser stripper, Parser parser) {
+        return new Parser(parser.label, parser.queue) {
+            @Override
+            public Result parse(IBuffer buffer) {
+                while(buffer.remaining() > 0) {
+                    Result result = parser.runParser(buffer);
+                    if (result.isSuccess()) {
+                        return result;
+                    }
+                    result = stripper.runParser(buffer);
+                    if (result.isError()) {
+                        return result;
+                    }
+                }
+                return Result.reachEnd();
             }
         };
     }
