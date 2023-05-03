@@ -7,9 +7,7 @@ import org.jay.parser.util.ErrorUtil;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -22,7 +20,7 @@ public abstract class Parser {
     protected Deque<String> queue;
 
     @Getter
-    private boolean isKiller;
+    private boolean isKiller = false;
 
     public Parser killer() {
         this.isKiller = true;
@@ -110,6 +108,35 @@ public abstract class Parser {
         };
     }
 
+    /**
+     * Connect with another parser
+     * @param parser
+     * @return
+     */
+    public Parser connect(Parser parser) {
+        if (parser.isKiller) {
+            return parser;
+        }
+        return new Parser(this.label + "--", this.queue) {
+            @Override
+            public Result parse(IBuffer buffer) {
+                Result step1 = Parser.this.runParser(buffer);
+                if (step1.isError()) {
+                    return Result.builder().errorMsg(step1.errorMsg).build();
+                }
+                Result step2 = parser.runParser(buffer);
+                if (step2.isError()) {
+                    buffer.backward(step1.length);
+                    return Result.builder().errorMsg(step2.errorMsg).build();
+                }
+                Result result = Result.empty();
+                result.length += step1.length + step2.length;
+                result.addAll(step1.getResult());
+                result.addAll(step2.getResult());
+                return result;
+            }
+        };
+    }
 
     /**
      * Connect with another parser
@@ -418,6 +445,19 @@ public abstract class Parser {
                     }
                 }
                 return Result.reachEnd();
+            }
+        };
+    }
+
+    /**
+     * a broken parser can never parse input
+     * @return
+     */
+    public static Parser broken() {
+        return new Parser("Broken", new ArrayDeque<>(1)) {
+            @Override
+            public Result parse(IBuffer buffer) {
+                return Result.broken();
             }
         };
     }

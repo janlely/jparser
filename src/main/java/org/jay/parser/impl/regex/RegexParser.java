@@ -1,11 +1,15 @@
 package org.jay.parser.impl.regex;
 
 import org.jay.parser.Parser;
+import org.jay.parser.Result;
 import org.jay.parser.parsers.ChooseParser;
+import org.jay.parser.parsers.NumberParsers;
 import org.jay.parser.parsers.TextParsers;
+import org.jay.parser.util.Buffer;
+import org.jay.parser.util.F;
 import org.jay.parser.util.Mapper;
-import org.w3c.dom.Text;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -14,22 +18,36 @@ import java.util.function.Predicate;
 public class RegexParser {
 
 
-    public static Parser parser2() {
-        return start().optional()
-                .connect(() -> parser())
-                .connect(() -> end().optional());
-    }
-    public static Parser parser() {
-        return token().many().map();
+    public static Optional<String> match(Parser parser, String src) {
+        Result result = run(parser, src);
+        if (result.isError()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(toStr().apply(result.getResult()));
     }
 
+    public static Result run(Parser parser, String src) {
+        if (parser.isKiller()) {
+            return parser.runParser(Buffer.builder().data(src.getBytes()).build());
+        }
+        return Parser.scan(TextParsers.skip(1), parser)
+                .runParser(Buffer.builder().data(src.getBytes()).build());
+    }
+
+    public static Parser compile(String regex) {
+        return start().optional()
+                .connect(() -> tokenParser())
+                .connect(() -> end().optional())
+                .map(tokensMapper()).runParser(Buffer.builder().data(regex.getBytes()).build())
+                .get(0);
+    }
     public static Parser tokenParser() {
-        return ChooseParser.choose(
-        ).many();
+        return token().many();
     }
 
     public static Parser start() {
         return TextParsers.one('^')
+                .killer()
                 .map(Mapper.replace(Token.builder().type(TokenType.START).build()))
                 .optional();
     }
@@ -44,7 +62,7 @@ public class RegexParser {
         return ChooseParser.choose(
                 escape(),
                 TextParsers.one('.').map(Mapper.replace(Token.builder().type(TokenType.VALID_CHAR)
-                        .value(Token.CharToken.builder().type(CharType.DOT).parser(TextParsers.any()).build()).build())),
+                        .value(Token.CharToken.builder().type(CharType.DOT).predicate(F.not(Character::isISOControl)).build()).build())),
                 TextParsers.one('+').map(Mapper.replace(Token.builder().type(TokenType.REPEAT).value(RepeatType.SOME).build())),
                 TextParsers.one('*').map(Mapper.replace(Token.builder().type(TokenType.REPEAT).value(RepeatType.MANY).build())),
                 TextParsers.one('{').ignore()
@@ -76,41 +94,47 @@ public class RegexParser {
                         .connect(() -> TextParsers.one(']').ignore())
                         .map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder()
                                         .type(CharType.SELECT)
-                                        .parser(TextParsers.satisfy((Predicate<Character>) s.get(0)))
+                                        .predicate((Predicate<Character>) s.get(0))
                                 .build()).build()),
                 TextParsers.one('(').ignore()
-                        .connect(() -> parser())
+                        .connect(() -> tokenParser())
                         .connect(() ->TextParsers.one(')').ignore())
                         .map(s -> Token.builder().type(TokenType.GROUP).value(s.get(0)).build()),
                 TextParsers.one('\\').ignore()
-                        .connect(() -> TextParsers.satisfy(Character::isDigit).map(s -> Character.getNumericValue((Character) s.get(0))))
+                        .connect(() -> NumberParsers.anyIntStr())
                         .map(s -> Token.builder().type(TokenType.QUOTE).value(s.get(0)).build()),
                 TextParsers.one('|').map(Mapper.replace(Token.builder().type(TokenType.OR))),
-                TextParsers.satisfy(c -> !Character.isISOControl(c)).map(s -> Token.builder().type(TokenType.VALID_CHAR)
+                TextParsers.satisfy(validChar()).map(s -> Token.builder().type(TokenType.VALID_CHAR)
                         .value(Token.CharToken.builder()
                                 .type(CharType.CHAR)
-                                .parser(TextParsers.satisfy(ch -> ch == s.get(0)))
+                                .predicate(ch -> ch == s.get(0))
                                 .build()).build())
         );
     }
 
+    private static Predicate<Character> validChar() {
+        return ch -> ch != '^' && ch != '$' && !Character.isISOControl(ch);
+    }
+
     public static Parser escape() {
         return ChooseParser.choose(
-                TextParsers.string("\\s").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.WHITE.getParser()).build()).build()),
-                TextParsers.string("\\S").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.NON_WHITE.getParser()).build()).build()),
-                TextParsers.string("\\d").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.DIGIT.getParser()).build()).build()),
-                TextParsers.string("\\D").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.NON_DIGIT.getParser()).build()).build()),
-                TextParsers.string("\\w").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.WORD.getParser()).build()).build()),
-                TextParsers.string("\\W").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.NON_WORD.getParser()).build()).build()),
-                TextParsers.string("\\.").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.DOT.getParser()).build()).build()),
-                TextParsers.string("\\(").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.LEFT_BRACKET.getParser()).build()).build()),
-                TextParsers.string("\\)").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.RIGHT_BRACKET.getParser()).build()).build()),
-                TextParsers.string("\\[").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.LEFT_SQUARE_BRACKET.getParser()).build()).build()),
-                TextParsers.string("\\]").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.RIGHT_SQUARE_BRACKET.getParser()).build()).build()),
-                TextParsers.string("\\\\").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.BACKSLASH.getParser()).build()).build()),
-                TextParsers.string("\\+").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.PLUS.getParser()).build()).build()),
-                TextParsers.string("\\*").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.STAR.getParser()).build()).build()),
-                TextParsers.string("\\?").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).parser(EscapeToken.QUESTION_MARK.getParser()).build()).build())
+                TextParsers.string("\\s").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.WHITE.getPredicate()).build()).build()),
+                TextParsers.string("\\S").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.NON_WHITE.getPredicate()).build()).build()),
+                TextParsers.string("\\d").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.DIGIT.getPredicate()).build()).build()),
+                TextParsers.string("\\D").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.NON_DIGIT.getPredicate()).build()).build()),
+                TextParsers.string("\\w").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.WORD.getPredicate()).build()).build()),
+                TextParsers.string("\\W").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.NON_WORD.getPredicate()).build()).build()),
+                TextParsers.string("\\.").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.DOT.getPredicate()).build()).build()),
+                TextParsers.string("\\(").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.LEFT_BRACKET.getPredicate()).build()).build()),
+                TextParsers.string("\\)").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.RIGHT_BRACKET.getPredicate()).build()).build()),
+                TextParsers.string("\\[").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.LEFT_SQUARE_BRACKET.getPredicate()).build()).build()),
+                TextParsers.string("\\]").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.RIGHT_SQUARE_BRACKET.getPredicate()).build()).build()),
+                TextParsers.string("\\\\").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.BACKSLASH.getPredicate()).build()).build()),
+                TextParsers.string("\\+").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.PLUS.getPredicate()).build()).build()),
+                TextParsers.string("\\*").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.STAR.getPredicate()).build()).build()),
+//                TextParsers.string("\\^").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.UP_ARROW.getPredicate()).build()).build()),
+//                TextParsers.string("\\$").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.DOLLAR.getPredicate()).build()).build()),
+                TextParsers.string("\\?").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.QUESTION_MARK.getPredicate()).build()).build())
         );
     }
 
@@ -140,8 +164,23 @@ public class RegexParser {
      * map [Token] to a Parser
      * @return
      */
-    public static Function<List, ?> tokensMapper() {
+    public static Function<List, Parser> tokensMapper() {
+        return tokens -> new ResultParser(0, tokens, new HashMap<>()).generateParse();
+    }
 
+    public static Function<List, String> toStr() {
+        return values -> {
+            StringBuilder result = new StringBuilder();
+            for (Object value : values) {
+                if (value instanceof Character) {
+                    result.append(Character.class.cast(value));
+                }
+                if (value instanceof GroupResult) {
+                    result.append(toStr().apply(GroupResult.class.cast(value).getValue()));
+                }
+            }
+            return result.toString();
+        };
     }
 
 }

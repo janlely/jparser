@@ -1,6 +1,5 @@
 package org.jay.parser.util;
 
-import javax.print.attribute.standard.PrinterURI;
 import java.util.Arrays;
 import java.util.function.Predicate;
 

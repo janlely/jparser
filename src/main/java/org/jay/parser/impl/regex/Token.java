@@ -1,7 +1,7 @@
 package org.jay.parser.impl.regex;
 
 import lombok.Builder;
-import org.jay.parser.Parser;
+import lombok.Data;
 
 import java.util.function.Predicate;
 
@@ -11,12 +11,14 @@ public class Token {
     TokenType type;
     Object value;
 
+    @Data
     @Builder
     public static class CharToken {
         private CharType type;
         private Predicate<Character> predicate;
     }
 
+    @Data
     @Builder
     public static class RepeatToken {
         private RepeatType type;

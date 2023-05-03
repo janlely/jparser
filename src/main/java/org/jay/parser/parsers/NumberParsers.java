@@ -4,6 +4,7 @@ import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.util.ErrorUtil;
+import org.jay.parser.util.Mapper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -18,6 +19,17 @@ public class NumberParsers {
      */
     public static Parser intStr(int a) {
         return TextParsers.string(String.valueOf(a)).map(__ -> a);
+    }
+
+
+    /**
+     * Parse a any integer encoded as a string.
+     * @return
+     */
+    public static Parser anyIntStr() {
+        return TextParsers.satisfy(Character::isDigit)
+                .some().map(Mapper.toStr())
+                .map(s -> Integer.parseInt((String) s.get(0)));
     }
 
     /**

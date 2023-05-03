@@ -60,4 +60,11 @@ public class Result {
                 .errorMsg("no more data to parse")
                 .build();
     }
+
+    public static Result broken() {
+        return Result.builder()
+                .errorMsg("broken parser")
+                .build();
+
+    }
 }
