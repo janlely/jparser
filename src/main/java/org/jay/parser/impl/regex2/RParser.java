@@ -3,11 +3,8 @@ package org.jay.parser.impl.regex2;
 import lombok.Builder;
 import lombok.Data;
 import org.jay.parser.Parser;
-import org.jay.parser.impl.regex.ResultParser;
 
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 @Data
 @Builder

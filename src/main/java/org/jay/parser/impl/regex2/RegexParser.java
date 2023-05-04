@@ -1,6 +1,5 @@
 package org.jay.parser.impl.regex2;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;

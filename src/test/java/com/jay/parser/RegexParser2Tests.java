@@ -1,26 +1,12 @@
 package com.jay.parser;
 
-import org.jay.parser.Parser;
 import org.jay.parser.Result;
-import org.jay.parser.impl.regex2.CharType;
-import org.jay.parser.impl.regex2.GroupResult;
 import org.jay.parser.impl.regex2.RParser;
 import org.jay.parser.impl.regex2.RegexParser;
-import org.jay.parser.impl.regex2.RepeatType;
-import org.jay.parser.impl.regex2.ResultParser;
-import org.jay.parser.impl.regex2.Token;
-import org.jay.parser.impl.regex2.TokenType;
-import org.jay.parser.parsers.NumberParsers;
-import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
-import org.jay.parser.util.F;
-import org.jay.parser.util.Mapper;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 public class RegexParser2Tests {
 
