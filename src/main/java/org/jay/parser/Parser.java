@@ -475,7 +475,7 @@ public abstract class Parser {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = null;
-                for(int i = 0; i < buffer.remaining(); i++) {
+                for(int i = 0; i <= buffer.remaining(); i++) {
                     IBuffer[] tmp = buffer.splitAt(i);
                     IBuffer left = tmp[0];
                     IBuffer right = tmp[1];
@@ -508,6 +508,13 @@ public abstract class Parser {
         };
     }
 
+    public static Parser btConnect(boolean greedy, List<Parser> parsers) {
+        if (parsers == null || parsers.isEmpty()) {
+            return Parser.empty();
+        }
+        return btConnect(greedy, parsers.get(0), parsers.subList(1, parsers.size()));
+    }
+
     /**
      * Backtracking-enabled connect
      * @param head
@@ -522,7 +529,7 @@ public abstract class Parser {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = null;
-                for(int i = 0; i < buffer.remaining(); i++) {
+                for(int i = 0; i <= buffer.remaining(); i++) {
                     IBuffer[] tmp = buffer.splitAt(i);
                     IBuffer left = tmp[0];
                     IBuffer right = tmp[1];
@@ -553,6 +560,19 @@ public abstract class Parser {
                 return Result.broken();
             }
         };
+    }
+
+    /**
+     * choose a Parser from array of Parser
+     * @param parsers
+     * @return
+     */
+    public static Parser choose(Supplier<Parser> ...parsers) {
+        Parser parser = Parser.broken();
+        for (Supplier<Parser> p : parsers) {
+            parser = parser.or(p);
+        }
+        return parser;
     }
 
     /**

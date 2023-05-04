@@ -16,7 +16,6 @@ import java.util.function.Predicate;
 
 public class RegexParser {
 
-
     public static Optional<String> match(Parser parser, String src) {
         Result result = run(parser, src);
         if (result.isError()) {
@@ -47,9 +46,7 @@ public class RegexParser {
 
     public static Parser start() {
         return TextParsers.one('^')
-                .killer()
-                .map(Mapper.replace(Token.builder().type(TokenType.START).build()))
-                .optional();
+                .map(Mapper.replace(Parser.empty()));
     }
 
     public static Parser end() {
@@ -57,6 +54,7 @@ public class RegexParser {
                 .map(Mapper.replace(Token.builder().type(TokenType.END).build()))
                 .optional();
     }
+
 
     public static Parser token() {
         return Parser.choose(
