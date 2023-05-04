@@ -2,7 +2,6 @@ package org.jay.parser.impl.regex;
 
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
-import org.jay.parser.parsers.ChooseParser;
 import org.jay.parser.parsers.NumberParsers;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
@@ -36,12 +35,13 @@ public class RegexParser {
 
     public static Parser compile(String regex) {
         return start().optional()
-                .connect(() -> tokenParser())
+                .connect(() -> tokenParsers())
                 .connect(() -> end().optional())
-                .map(tokensMapper()).runParser(Buffer.builder().data(regex.getBytes()).build())
+                .map(toParsers())
+                .runParser(Buffer.builder().data(regex.getBytes()).build())
                 .get(0);
     }
-    public static Parser tokenParser() {
+    public static Parser tokenParsers() {
         return token().many();
     }
 
@@ -59,12 +59,14 @@ public class RegexParser {
     }
 
     public static Parser token() {
-        return ChooseParser.choose(
+        return Parser.choose(
                 escape(),
                 TextParsers.one('.').map(Mapper.replace(Token.builder().type(TokenType.VALID_CHAR)
                         .value(Token.CharToken.builder().type(CharType.DOT).predicate(F.not(Character::isISOControl)).build()).build())),
-                TextParsers.one('+').map(Mapper.replace(Token.builder().type(TokenType.REPEAT).value(RepeatType.SOME).build())),
-                TextParsers.one('*').map(Mapper.replace(Token.builder().type(TokenType.REPEAT).value(RepeatType.MANY).build())),
+                TextParsers.one('+').map(Mapper.replace(Token.builder().type(TokenType.REPEAT)
+                        .value(Token.RepeatToken.builder().type(RepeatType.SOME).build()).build())),
+                TextParsers.one('*').map(Mapper.replace(Token.builder().type(TokenType.REPEAT)
+                        .value(Token.RepeatToken.builder().type(RepeatType.MANY).build()).build())),
                 TextParsers.one('{').ignore()
                         .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
                         .connect(() -> TextParsers.one(',').ignore())
@@ -97,13 +99,13 @@ public class RegexParser {
                                         .predicate((Predicate<Character>) s.get(0))
                                 .build()).build()),
                 TextParsers.one('(').ignore()
-                        .connect(() -> tokenParser())
+                        .connect(() -> tokenParsers())
                         .connect(() ->TextParsers.one(')').ignore())
                         .map(s -> Token.builder().type(TokenType.GROUP).value(s.get(0)).build()),
                 TextParsers.one('\\').ignore()
                         .connect(() -> NumberParsers.anyIntStr())
                         .map(s -> Token.builder().type(TokenType.QUOTE).value(s.get(0)).build()),
-                TextParsers.one('|').map(Mapper.replace(Token.builder().type(TokenType.OR))),
+                TextParsers.one('|').map(Mapper.replace(Token.builder().type(TokenType.OR).build())),
                 TextParsers.satisfy(validChar()).map(s -> Token.builder().type(TokenType.VALID_CHAR)
                         .value(Token.CharToken.builder()
                                 .type(CharType.CHAR)
@@ -112,12 +114,12 @@ public class RegexParser {
         );
     }
 
-    private static Predicate<Character> validChar() {
+    public static Predicate<Character> validChar() {
         return ch -> ch != '^' && ch != '$' && !Character.isISOControl(ch);
     }
 
     public static Parser escape() {
-        return ChooseParser.choose(
+        return Parser.choose(
                 TextParsers.string("\\s").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.WHITE.getPredicate()).build()).build()),
                 TextParsers.string("\\S").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.NON_WHITE.getPredicate()).build()).build()),
                 TextParsers.string("\\d").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.DIGIT.getPredicate()).build()).build()),
@@ -132,8 +134,6 @@ public class RegexParser {
                 TextParsers.string("\\\\").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.BACKSLASH.getPredicate()).build()).build()),
                 TextParsers.string("\\+").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.PLUS.getPredicate()).build()).build()),
                 TextParsers.string("\\*").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.STAR.getPredicate()).build()).build()),
-//                TextParsers.string("\\^").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.UP_ARROW.getPredicate()).build()).build()),
-//                TextParsers.string("\\$").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.DOLLAR.getPredicate()).build()).build()),
                 TextParsers.string("\\?").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.QUESTION_MARK.getPredicate()).build()).build())
         );
     }
@@ -142,15 +142,24 @@ public class RegexParser {
         Parser range = TextParsers.satisfy(Character::isLetterOrDigit)
                 .connect(() -> TextParsers.one('-').ignore())
                 .connect(() -> TextParsers.satisfy(Character::isLetterOrDigit))
-                .map(s -> (Predicate<Character>) character -> character >= (Character) s.get(0) && (Character) s.get(1) >= character);
+                .map(s -> {
+                    return (Predicate<Character>) character -> {
+                        return character >= (Character) s.get(0) && (Character) s.get(1) >= character;
+                    };
+                });
         Function<List, ?> mapper = s -> (Predicate<Character>) character -> {
-            Optional<Predicate> p = s.stream().reduce((a, b) -> (Predicate<Character>) x -> Predicate.class.cast(a).test(x) || Predicate.class.cast(b).test(x));
+            Optional<Predicate> p = s.stream().reduce((a, b) -> (Predicate<Character>) x -> {
+                return Predicate.class.cast(a).test(x) || Predicate.class.cast(b).test(x);
+            });
             return p.get().test(character);
         };
         return TextParsers.one('^').optional()
-                .connect(() -> ChooseParser.choose(
+                .connect(() -> Parser.choose(
                         range,
-                        TextParsers.satisfy(Character::isLetterOrDigit).map(s -> (Predicate<Character>) character -> character == s.get(0))
+                        TextParsers.string("\\[").map(Mapper.replace('[')),
+                        TextParsers.string("\\]").map(Mapper.replace(']')),
+                        TextParsers.satisfy(F.noneOf(Character::isISOControl, ch -> ch == ']'))
+                                .map(s -> (Predicate<Character>) character -> character == s.get(0))
                 ).some().map(mapper))
                 .map(s -> {
                     if (s.size() == 1) {
@@ -164,7 +173,7 @@ public class RegexParser {
      * map [Token] to a Parser
      * @return
      */
-    public static Function<List, Parser> tokensMapper() {
+    public static Function<List, Parser> toParsers() {
         return tokens -> new ResultParser(0, tokens, new HashMap<>()).generateParse();
     }
 

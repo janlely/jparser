@@ -1,6 +1,7 @@
 package org.jay.parser;
 
 import lombok.Getter;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.ErrorUtil;
 
@@ -175,12 +176,10 @@ public abstract class Parser {
         return new Parser(String.format("<%s>", this.label), this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
-                int pos = buffer.getPos();
                 Result result = Parser.this.runParser(buffer);
                 if (result.isSuccess() && p.test(result)) {
                     return result;
                 }
-                buffer.jump(pos);
                 return Result.builder()
                         .errorMsg(ErrorUtil.error(buffer))
                         .build();
@@ -460,5 +459,125 @@ public abstract class Parser {
                 return Result.broken();
             }
         };
+    }
+
+    /**
+     * Backtracking-enabled connect
+     * @param head
+     * @param tail
+     * @return
+     */
+    public static Parser btConnect(boolean greedy, Parser head, List<Parser> tail) {
+        if (tail == null || tail.isEmpty()) {
+            return head;
+        }
+        return new Parser("ChooseParser.btChoose", new ArrayDeque<>()) {
+            @Override
+            public Result parse(IBuffer buffer) {
+                Result result = null;
+                for(int i = 0; i < buffer.remaining(); i++) {
+                    IBuffer[] tmp = buffer.splitAt(i);
+                    IBuffer left = tmp[0];
+                    IBuffer right = tmp[1];
+                    Result headResult = head.runParser(left);
+                    if (headResult.isError()) {
+                        continue;
+                    }
+                    Result tailResult = btConnect(greedy, tail.get(0), tail.subList(1, tail.size())).runParser(right);
+                    if (tailResult.isError()) {
+                        continue;
+                    }
+                    Result curRes = Result.empty();
+                    curRes.incLen(headResult.getLength());
+                    curRes.addAll(headResult.getResult());
+                    curRes.incLen(tailResult.getLength());
+                    curRes.addAll(tailResult.getResult());
+                    if (!greedy) {
+                        return curRes;
+                    }
+                    if (result == null) {
+                        result = curRes;
+                    }else {
+                        if (result.getLength() < curRes.getLength()) {
+                            result = curRes;
+                        }
+                    }
+                }
+                return result == null ? Result.broken() : result;
+            }
+        };
+    }
+
+    /**
+     * Backtracking-enabled connect
+     * @param head
+     * @param tail
+     * @return
+     */
+    public static Parser btConnect(boolean greedy, Parser head, Parser ...tail) {
+        if (tail == null || tail.length == 0) {
+            return head;
+        }
+        return new Parser("ChooseParser.btChoose", new ArrayDeque<>()) {
+            @Override
+            public Result parse(IBuffer buffer) {
+                Result result = null;
+                for(int i = 0; i < buffer.remaining(); i++) {
+                    IBuffer[] tmp = buffer.splitAt(i);
+                    IBuffer left = tmp[0];
+                    IBuffer right = tmp[1];
+                    Result headResult = head.runParser(left);
+                    if (headResult.isError()) {
+                        continue;
+                    }
+                    Result tailResult = btConnect(greedy, tail[1], ArrayUtils.subarray(tail, 1, tail.length - 1)).runParser(right);
+                    if (tailResult.isError()) {
+                        continue;
+                    }
+                    Result curRes = Result.empty();
+                    curRes.incLen(headResult.getLength());
+                    curRes.addAll(headResult.getResult());
+                    curRes.incLen(tailResult.getLength());
+                    curRes.addAll(tailResult.getResult());
+                    if (!greedy) {
+                        return curRes;
+                    }
+                    if (result == null) {
+                        result = curRes;
+                    }else {
+                        if (result.getLength() < curRes.getLength()) {
+                            result = curRes;
+                        }
+                    }
+                }
+                return Result.broken();
+            }
+        };
+    }
+
+    /**
+     * choose a Parser from array of Parser
+     * @param parsers
+     * @return
+     */
+    public static Parser choose(Parser ...parsers) {
+        Parser parser = Parser.broken();
+        for (Parser p : parsers) {
+            parser = parser.or(() -> p);
+        }
+        return parser;
+    }
+
+    /**
+     * choose a Parser from array of Parser
+     * @param parsers
+     * @return
+     */
+    public static Parser choose(List<Parser> parsers) {
+        Parser parser = Parser.broken();
+        for (Parser p : parsers) {
+            parser = parser.or(() -> p);
+        }
+        return parser;
     }
 }

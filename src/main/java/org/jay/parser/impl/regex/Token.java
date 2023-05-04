@@ -5,11 +5,16 @@ import lombok.Data;
 
 import java.util.function.Predicate;
 
+@Data
 @Builder
 public class Token {
 
     TokenType type;
     Object value;
+
+    public <T> T getValue() {
+        return (T) value;
+    }
 
     @Data
     @Builder
@@ -23,6 +28,10 @@ public class Token {
     public static class RepeatToken {
         private RepeatType type;
         private Object value;
+
+        public <T> T getValue() {
+            return (T) value;
+        }
     }
 
 }

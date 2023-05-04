@@ -5,11 +5,7 @@ import java.util.Optional;
 public interface IBuffer {
     void backward(int n);
 
-    int offset(int n);
-
-    abstract int remaining();
-
-    void jump(int pos);
+    int remaining();
 
     Optional<Byte> head();
 
@@ -18,4 +14,8 @@ public interface IBuffer {
     void forward(int n);
 
     int getPos();
+
+    IBuffer[] splitAt(int idx);
+
+    byte[] remainContent();
 }

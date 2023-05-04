@@ -1,10 +1,10 @@
 package org.jay.parser.impl.regex;
 
 import org.jay.parser.Parser;
-import org.jay.parser.parsers.ChooseParser;
 import org.jay.parser.parsers.TextParsers;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -79,31 +79,38 @@ public class ResultParser {
             Token token = tokens.pop();
             switch (token.type) {
                 case REPEAT:
-                    if (tokens.isEmpty() || !isNotRepeatable(tokens.peek().type)) {
+                    if (tokens.isEmpty() || isNotRepeatable(tokens.peek().type)) {
                         return Parser.broken();
                     }
                     parserStack.push(toRepeat((Token.RepeatToken) token.value, tokenParser(tokens.pop())));
+                    break;
                 case VALID_CHAR:
                 case GROUP:
                     parserStack.push(tokenParser(token));
+                    break;
                 case QUOTE:
                     int gid = (int) token.value;
                     if (!this.groupParsers.containsKey(gid)) {
                         throw new InvalidRegexException("wrong groupId: " + gid);
                     }
                     parserStack.push(this.groupParsers.get(gid));
+                    break;
             }
         }
-        Parser resultParser = Parser.empty();
-        while(!parserStack.isEmpty()) {
-            resultParser = resultParser.connect(parserStack.pop());
+        if (parserStack.isEmpty()) {
+            return Parser.empty();
         }
-        return resultParser;
+        Parser head = parserStack.pop();
+        LinkedList<Parser> tail = new LinkedList<>();
+        while(!parserStack.isEmpty()) {
+            tail.add(parserStack.pop());
+        }
+        return Parser.btConnect(true, head, tail);
     }
 
     public Parser generateParse() {
         //split by |
-        Parser parser = ChooseParser.choose(splitByOr().stream()
+        Parser parser = Parser.choose(splitByOr().stream()
                 .map(this::doGenerateParse).collect(Collectors.toList()))
                 .map(s -> (GroupResult.builder().groupId(this.groupId).value(s).build()));
         this.groupParsers.put(groupId, parser);
@@ -133,7 +140,7 @@ public class ResultParser {
             case SOME:
                 return base.some();
             case RANGE:
-                int[] range = (int[]) token.getValue();
+                int[] range = token.getValue();
                 return base.range(range[0], range[1]);
             case REPEAT:
                 return base.repeat((Integer) token.getValue());

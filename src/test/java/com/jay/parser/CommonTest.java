@@ -11,7 +11,9 @@ import org.junit.Test;
 
 import java.nio.charset.CharacterCodingException;
 import java.util.ArrayDeque;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 public class CommonTest {
 
@@ -85,5 +87,18 @@ public class CommonTest {
         queue.addFirst(3);
         queue.addFirst(2);
         System.out.println("hello");
+    }
+
+    @Test
+    public void testStack() {
+        Stack<Integer> stack = new Stack<>();
+        stack.push(1);
+        stack.push(2);
+        stack.push(3);
+        LinkedList<Integer> list = new LinkedList<>(stack);
+        System.out.println(list.get(0));
+        System.out.println(list.get(1));
+        System.out.println(list.get(2));
+        stack.stream().forEach(i -> System.out.println(i));
     }
 }
