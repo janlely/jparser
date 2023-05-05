@@ -149,6 +149,7 @@ public class RegexParser {
                 .getResult();
         switch (parsers.size()) {
             case 1:
+                //Excluding the head(^) and tail($), scanning is required
                 this.compiledParser = parsers.get(0).getParser().scan(() -> {
                     this.groupResult.clear();
                     this.groupId.set(0);
@@ -156,9 +157,11 @@ public class RegexParser {
                 });
                 break;
             case 2:
+                //including head(^), scanning is not required
                 if (parsers.get(0).getType() == RParser.ParserType.START) {
                     this.compiledParser = parsers.get(1).getParser();
                 }else {
+                //including tail($), followed by a eof() and scanning is required
                     this.compiledParser = parsers.get(0).getParser()
                             .scan(() -> {
                                 this.groupResult.clear();
@@ -169,11 +172,16 @@ public class RegexParser {
                 }
                 break;
             case 3:
+                //including the head(^) and tail($), followed by a eof() and scanning is required
                 this.compiledParser = parsers.get(1).getParser().connect(() -> TextParsers.eof());
                 break;
         }
     }
 
+    /**
+     * escape, [], \\, (), char
+     * @return
+     */
     public Parser validToken() {
         return Parser.choose(
                 () -> escape(),
@@ -209,6 +217,14 @@ public class RegexParser {
 
     }
 
+    /**
+     * backtracing enabled connect
+     * @param greedy
+     * @param groupResult
+     * @param groupId
+     * @param parsers
+     * @return
+     */
     public static Parser btConnect(boolean greedy, Map<Integer,String> groupResult, AtomicInteger groupId, List<RParser> parsers) {
         if (parsers == null || parsers.isEmpty()) {
             return Parser.empty();
@@ -291,6 +307,10 @@ public class RegexParser {
         };
     }
 
+    /**
+     * \s \S \w \W ....
+     * @return
+     */
     public Parser escape() {
         return Parser.choose(
                 TextParsers.string("\\s").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.WHITE.getPredicate())).build())),
@@ -311,6 +331,10 @@ public class RegexParser {
         );
     }
 
+    /**
+     * [selectors]
+     * @return
+     */
     public static Parser select() {
         Parser range = TextParsers.satisfy(Character::isLetterOrDigit)
                 .connect(() -> TextParsers.one('-').ignore())
@@ -336,10 +360,17 @@ public class RegexParser {
                 });
     }
 
+
     public Predicate<Character> validChar() {
         return ch -> !StringUtils.contains("^$+*.?{}()", ch);
     }
 
+    /**
+     * validToken + repeat
+     * @param token
+     * @param base
+     * @return
+     */
     private RParser toRepeat(RepeatToken token, RParser base) {
         switch (token.getType()) {
             case MANY:
@@ -355,16 +386,6 @@ public class RegexParser {
                 return base.apply(p -> p.optional());
         }
         throw new RuntimeException("unrecognized RepeatToken, type: " + token.getType().name());
-    }
-
-    @Data
-    @Builder
-    public static class BtContext {
-        private List<RParser> parsers;
-        private Map<Integer, String> groupResult;
-        private boolean greedy;
-        private int groupId;
-        private IBuffer buffer;
     }
 
     @Data

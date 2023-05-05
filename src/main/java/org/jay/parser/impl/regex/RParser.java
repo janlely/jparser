@@ -6,6 +6,9 @@ import org.jay.parser.Parser;
 
 import java.util.function.Function;
 
+/**
+ * a Regex Parser, include some extra info
+ */
 @Data
 @Builder
 public class RParser {
