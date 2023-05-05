@@ -1,5 +1,10 @@
 package org.jay.parser.impl.regex;
 
+import lombok.Builder;
+import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
+import org.brick.common.types.Pair;
+import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
 import org.jay.parser.parsers.NumberParsers;
@@ -8,131 +13,280 @@ import org.jay.parser.util.Buffer;
 import org.jay.parser.util.F;
 import org.jay.parser.util.Mapper;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RegexParser {
 
-    public static Optional<String> match(Parser parser, String src) {
-        Result result = run(parser, src);
-        if (result.isError()) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(toStr().apply(result.getResult()));
+    private AtomicInteger groupId;
+    private Map<Integer, String> groupResult;
+
+    private Parser compiledParser;
+
+    public RegexParser() {
+        this.groupId = new AtomicInteger(0);
+        this.groupResult = new HashMap<>();
     }
 
-    public static Result run(Parser parser, String src) {
-        if (parser.isKiller()) {
-            return parser.runParser(Buffer.builder().data(src.getBytes()).build());
-        }
-        return Parser.scan(TextParsers.skip(1), parser)
-                .runParser(Buffer.builder().data(src.getBytes()).build());
+    /**
+     * "x*"
+     * @return
+     */
+    public Parser many() {
+        return validToken()
+                .connect(TextParsers.one('*').ignore())
+                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.MANY).build(),
+                        (RParser) s.get(0)));
     }
 
-    public static Parser compile(String regex) {
-        return start().optional()
-                .connect(() -> tokenParsers())
-                .connect(() -> end().optional())
-                .map(toParsers())
-                .runParser(Buffer.builder().data(regex.getBytes()).build())
-                .get(0);
-    }
-    public static Parser tokenParsers() {
-        return token().many();
+    /**
+     * "x+"
+     * @return
+     */
+    public Parser some() {
+        return validToken()
+                .connect(TextParsers.one('+').ignore())
+                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.SOME).build(),
+                        (RParser) s.get(0)));
     }
 
-    public static Parser start() {
-        return TextParsers.one('^')
-                .map(Mapper.replace(Parser.empty()));
+    /**
+     * "x{m,n}"
+     * @return
+     */
+    public Parser range() {
+        Parser rangeParser = TextParsers.one('{').ignore()
+                .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
+                .connect(() -> TextParsers.one(',').ignore())
+                .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
+                .connect(() -> TextParsers.one('}').ignore());
+        return validToken().connect(rangeParser)
+                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.RANGE)
+                                .value(new int[] {(int) s.get(1), (int) s.get(2)}).build(),
+                        (RParser) s.get(0)));
+    }
+
+    /**
+     * "x{n}"
+     * @return
+     */
+    public Parser repeat() {
+        Parser rangeParser = TextParsers.one('{').ignore()
+                .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
+                .connect(() -> TextParsers.one('}').ignore());
+        return validToken().connect(rangeParser)
+                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.REPEAT)
+                                .value(s.get(1)).build(),
+                        (RParser) s.get(0)));
+    }
+
+    /**
+     * "x?"
+     * @return
+     */
+    public Parser optional() {
+        return validToken().connect(TextParsers.one('?').ignore())
+                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.OPTIONAL).build(),
+                        (RParser) s.get(0)));
+    }
+
+    public Parser start() {
+        return TextParsers.one('^').map(Mapper.replace(RParser.builder().type(RParser.ParserType.START).build()));
     }
 
     public static Parser end() {
         return TextParsers.one('$')
-                .map(Mapper.replace(Token.builder().type(TokenType.END).build()))
+                .map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.eof()).build()))
                 .optional();
     }
 
-
-    public static Parser token() {
+    public Parser parser() {
         return Parser.choose(
-                escape(),
-                TextParsers.one('.').map(Mapper.replace(Token.builder().type(TokenType.VALID_CHAR)
-                        .value(Token.CharToken.builder().type(CharType.DOT).predicate(F.not(Character::isISOControl)).build()).build())),
-                TextParsers.one('+').map(Mapper.replace(Token.builder().type(TokenType.REPEAT)
-                        .value(Token.RepeatToken.builder().type(RepeatType.SOME).build()).build())),
-                TextParsers.one('*').map(Mapper.replace(Token.builder().type(TokenType.REPEAT)
-                        .value(Token.RepeatToken.builder().type(RepeatType.MANY).build()).build())),
-                TextParsers.one('{').ignore()
-                        .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
-                        .connect(() -> TextParsers.one(',').ignore())
-                        .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
-                        .connect(() -> TextParsers.one('}').ignore())
-                        .map(s -> Token.builder().type(TokenType.REPEAT)
-                                .value(Token.RepeatToken.builder()
-                                        .type(RepeatType.RANGE).value(new int[] {(int) s.get(0), (int) s.get(1)})
-                                        .build())
-                                .build()),
-                TextParsers.one('{').ignore()
-                        .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
-                        .connect(() -> TextParsers.one('}').ignore())
-                        .map(s -> Token.builder().type(TokenType.REPEAT).value(Token.RepeatToken.builder()
-                                        .value(s.get(0))
-                                        .type(RepeatType.REPEAT)
-                                        .build())
-                                .build()),
-                TextParsers.one('?').map(Mapper.replace(Token.builder()
-                        .type(TokenType.REPEAT)
-                        .value(Token.RepeatToken.builder()
-                                .type(RepeatType.OPTIONAL)
-                                .build())
+                () -> many(),
+                () -> some(),
+                () -> range(),
+                () -> repeat(),
+                () -> optional(),
+                () -> validToken()
+        ).many().map(s -> {
+            return RParser.builder().parser(RegexParser.btConnect(true, groupResult, s).map(Mapper.toStr()))
+                    .type(RParser.ParserType.PARSER)
+                    .groupId(this.groupId.getAndIncrement())
+                    .build();
+        });
+    }
+
+    public Optional<String> match(String src) {
+        Result result = this.compiledParser.runParser(Buffer.builder().data(src.getBytes()).build());
+        if (result.isSuccess()) {
+            return Optional.of(result.get(0));
+        }
+        return Optional.empty();
+    }
+    public void compile(String regex) {
+        Parser parserParser = start().optional()
+                .connect(() -> parser())
+                .connect(() -> end().optional());
+        List<RParser> parsers = parserParser.runParser(Buffer.builder().data(regex.getBytes()).build())
+                .getResult();
+        switch (parsers.size()) {
+            case 1:
+                this.compiledParser = parsers.get(0).getParser().scan(TextParsers.skip(1));
+                break;
+            case 2:
+                if (parsers.get(0).getType() == RParser.ParserType.START) {
+                    this.compiledParser = parsers.get(1).getParser();
+                }else {
+                    this.compiledParser = parsers.get(0).getParser()
+                            .scan(TextParsers.skip(1))
+                            .connect(() -> TextParsers.eof());
+                }
+                break;
+            case 3:
+                this.compiledParser = parsers.get(1).getParser().connect(() -> TextParsers.eof());
+                break;
+        }
+    }
+
+    public Parser validToken() {
+        return Parser.choose(
+                () -> escape(),
+                () -> TextParsers.one('.').map(Mapper.replace(RParser.builder()
+                        .type(RParser.ParserType.PARSER)
+                        .parser(TextParsers.satisfy(F.not(Character::isISOControl)))
                         .build())),
-                TextParsers.one('[').ignore()
+                () -> TextParsers.one('[').ignore()
                         .connect(() -> select())
                         .connect(() -> TextParsers.one(']').ignore())
-                        .map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder()
-                                        .type(CharType.SELECT)
-                                        .predicate((Predicate<Character>) s.get(0))
-                                .build()).build()),
-                TextParsers.one('(').ignore()
-                        .connect(() -> tokenParsers())
-                        .connect(() ->TextParsers.one(')').ignore())
-                        .map(s -> Token.builder().type(TokenType.GROUP).value(s.get(0)).build()),
-                TextParsers.one('\\').ignore()
+                        .map(s -> RParser.builder()
+                                .type(RParser.ParserType.PARSER)
+                                .parser(TextParsers.satisfy((Predicate<Character>) s.get(0))).build()),
+                () -> TextParsers.one('\\').ignore()
                         .connect(() -> NumberParsers.anyIntStr())
-                        .map(s -> Token.builder().type(TokenType.QUOTE).value(s.get(0)).build()),
-                TextParsers.one('|').map(Mapper.replace(Token.builder().type(TokenType.OR).build())),
-                TextParsers.satisfy(validChar()).map(s -> Token.builder().type(TokenType.VALID_CHAR)
-                        .value(Token.CharToken.builder()
-                                .type(CharType.CHAR)
-                                .predicate(ch -> ch == s.get(0))
-                                .build()).build())
+                        .map(s -> RParser.builder()
+                                .type(RParser.ParserType.QUOTE)
+                                .quoteId((int) s.get(0))
+                                .build()),
+                () -> TextParsers.satisfy(validChar()).map(s -> RParser.builder()
+                        .type(RParser.ParserType.PARSER)
+                        .parser(TextParsers.satisfy(ch -> ch == s.get(0)))
+                        .build()),
+                () -> TextParsers.one('(').ignore()
+                        .connect(() -> parser())
+                        .connect(() ->TextParsers.one(')').ignore())
+                        .map(s -> {
+                            RParser rp = RParser.class.cast(s.get(0));
+                            rp.setType(RParser.ParserType.GROUP);
+                            return rp;
+                        })
         );
+
     }
 
-    public static Predicate<Character> validChar() {
-        return ch -> ch != '^' && ch != '$' && !Character.isISOControl(ch);
+    public static Parser btConnect(boolean greedy, Map<Integer, String> groupResult, List<RParser> parsers) {
+        if (parsers == null || parsers.isEmpty()) {
+            return Parser.empty();
+        }
+        List<String> labels = parsers.stream().flatMap(r -> {
+            if (r.getType() == RParser.ParserType.QUOTE) {
+                return Stream.of("QUOTE + " + r.getQuoteId());
+            }
+            return r.getParser().getQueue().stream();
+        }).collect(Collectors.toList());
+        return new Parser("RegexParser.btConnect", new ArrayDeque<>(labels)) {
+            @Override
+            public Result parse(IBuffer buffer) {
+                RParser headParser = parsers.get(0);
+                //处理引用
+                if (headParser.getType() == RParser.ParserType.QUOTE) {
+                    if (!groupResult.containsKey(headParser.getQuoteId())) {
+                        throw new InvalidRegexException("invalid group: " + headParser.getQuoteId());
+                    }
+                    Parser p = headParser.getFunc() == null
+                            ? TextParsers.string(groupResult.get(headParser.getQuoteId()))
+                            : headParser.getFunc().apply(TextParsers.string(groupResult.get(headParser.getQuoteId())));
+                    return p.connect(() -> RegexParser.btConnect(greedy, groupResult, parsers.subList(1, parsers.size())))
+                            .runParser(buffer);
+                }
+                //处理非引用
+                LoopObject lp = LoopObject.builder()
+                        .greedy(greedy)
+                        .current(false)
+                        .succeeded(false)
+                        .idx(0)
+                        .headParser(headParser)
+                        .htResult(new Pair<>(Result.broken(), Result.broken()))
+                        .build();
+                Parser tailParser = RegexParser.btConnect(greedy, groupResult, parsers.subList(1, parsers.size()));
+                while(!lp.end(buffer)) {
+                    IBuffer[] tmp = buffer.splitAt(lp.getIdx());
+                    IBuffer left = tmp[0];
+                    IBuffer right = tmp[1];
+                    Result headResult = headParser.getParser().runParser(left);
+                    if (headResult.isError()) {
+                        lp.current = false;
+                        lp.idx++;
+                        continue;
+                    }
+                    lp.succeeded = true;
+                    lp.current = true;
+                    Result tailResult = tailParser.runParser(right);
+                    if (tailResult.isError()) {
+                        lp.idx++;
+                        continue;
+                    }
+                    //如果是group解析器就缓存group的结果
+                    if (lp.getHeadParser().getType() == RParser.ParserType.GROUP) {
+                        groupResult.put(headParser.getGroupId(), StringUtils.join(headResult.getResult(), ""));
+                    }
+                    if (!lp.isSuccess()) {
+                        lp.setHtResult(new Pair<>(headResult, tailResult));
+                    }
+                    //当前结果不是最长的，取之前更长的
+                    if (lp.isSuccess() && lp.getLen() < headResult.getLength() + tailResult.getLength()) {
+                        lp.setHtResult(new Pair<>(headResult, tailResult));
+                    }
+                    lp.idx++;
+                }
+                if (!lp.isSuccess()) {
+                    return Result.broken();
+                }
+                Result result = Result.empty();
+                result.addAll(Pair.getLeft(lp.getHtResult()).getResult());
+                result.addAll(Pair.getRight(lp.getHtResult()).getResult());
+                result.incLen(Pair.getLeft(lp.getHtResult()).getLength());
+                result.incLen(Pair.getRight(lp.getHtResult()).getLength());
+                buffer.forward(result.getLength());
+                return result;
+            }
+        };
     }
 
-    public static Parser escape() {
+    public Parser escape() {
         return Parser.choose(
-                TextParsers.string("\\s").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.WHITE.getPredicate()).build()).build()),
-                TextParsers.string("\\S").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.NON_WHITE.getPredicate()).build()).build()),
-                TextParsers.string("\\d").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.DIGIT.getPredicate()).build()).build()),
-                TextParsers.string("\\D").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.NON_DIGIT.getPredicate()).build()).build()),
-                TextParsers.string("\\w").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.WORD.getPredicate()).build()).build()),
-                TextParsers.string("\\W").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.NON_WORD.getPredicate()).build()).build()),
-                TextParsers.string("\\.").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.DOT.getPredicate()).build()).build()),
-                TextParsers.string("\\(").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.LEFT_BRACKET.getPredicate()).build()).build()),
-                TextParsers.string("\\)").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.RIGHT_BRACKET.getPredicate()).build()).build()),
-                TextParsers.string("\\[").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.LEFT_SQUARE_BRACKET.getPredicate()).build()).build()),
-                TextParsers.string("\\]").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.RIGHT_SQUARE_BRACKET.getPredicate()).build()).build()),
-                TextParsers.string("\\\\").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.BACKSLASH.getPredicate()).build()).build()),
-                TextParsers.string("\\+").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.PLUS.getPredicate()).build()).build()),
-                TextParsers.string("\\*").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.STAR.getPredicate()).build()).build()),
-                TextParsers.string("\\?").map(s -> Token.builder().type(TokenType.VALID_CHAR).value(Token.CharToken.builder().type(CharType.ESCAPE).predicate(EscapeToken.QUESTION_MARK.getPredicate()).build()).build())
+                TextParsers.string("\\s").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.WHITE.getPredicate())).build())),
+                TextParsers.string("\\S").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_WHITE.getPredicate())).build())),
+                TextParsers.string("\\d").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.DIGIT.getPredicate())).build())),
+                TextParsers.string("\\D").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_DIGIT.getPredicate())).build())),
+                TextParsers.string("\\w").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.WORD.getPredicate())).build())),
+                TextParsers.string("\\W").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_WORD.getPredicate())).build())),
+                TextParsers.string("\\.").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.DOT.getPredicate())).build())),
+                TextParsers.string("\\(").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.LEFT_BRACKET.getPredicate())).build())),
+                TextParsers.string("\\)").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.RIGHT_BRACKET.getPredicate())).build())),
+                TextParsers.string("\\[").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.LEFT_SQUARE_BRACKET.getPredicate())).build())),
+                TextParsers.string("\\]").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.RIGHT_SQUARE_BRACKET.getPredicate())).build())),
+                TextParsers.string("\\\\").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.BACKSLASH.getPredicate())).build())),
+                TextParsers.string("\\+").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.PLUS.getPredicate())).build())),
+                TextParsers.string("\\*").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.STAR.getPredicate())).build())),
+                TextParsers.string("\\?").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.QUESTION_MARK.getPredicate())).build()))
         );
     }
 
@@ -140,15 +294,9 @@ public class RegexParser {
         Parser range = TextParsers.satisfy(Character::isLetterOrDigit)
                 .connect(() -> TextParsers.one('-').ignore())
                 .connect(() -> TextParsers.satisfy(Character::isLetterOrDigit))
-                .map(s -> {
-                    return (Predicate<Character>) character -> {
-                        return character >= (Character) s.get(0) && (Character) s.get(1) >= character;
-                    };
-                });
+                .map(s -> (Predicate<Character>) character -> character >= (Character) s.get(0) && (Character) s.get(1) >= character);
         Function<List, ?> mapper = s -> (Predicate<Character>) character -> {
-            Optional<Predicate> p = s.stream().reduce((a, b) -> (Predicate<Character>) x -> {
-                return Predicate.class.cast(a).test(x) || Predicate.class.cast(b).test(x);
-            });
+            Optional<Predicate> p = s.stream().reduce((a, b) -> (Predicate<Character>) x -> Predicate.class.cast(a).test(x) || Predicate.class.cast(b).test(x));
             return p.get().test(character);
         };
         return TextParsers.one('^').optional()
@@ -167,27 +315,65 @@ public class RegexParser {
                 });
     }
 
-    /**
-     * map [Token] to a Parser
-     * @return
-     */
-    public static Function<List, Parser> toParsers() {
-        return tokens -> new ResultParser(0, tokens, new HashMap<>()).generateParse();
+    public Predicate<Character> validChar() {
+        return ch -> !StringUtils.contains("^$+*.?{}()", ch);
     }
 
-    public static Function<List, String> toStr() {
-        return values -> {
-            StringBuilder result = new StringBuilder();
-            for (Object value : values) {
-                if (value instanceof Character) {
-                    result.append(Character.class.cast(value));
-                }
-                if (value instanceof GroupResult) {
-                    result.append(toStr().apply(GroupResult.class.cast(value).getValue()));
-                }
-            }
-            return result.toString();
-        };
+    private RParser toRepeat(Token.RepeatToken token, RParser base) {
+        switch (token.getType()) {
+            case MANY:
+                return base.apply(p -> p.many().map(Mapper.toStr()));
+            case SOME:
+                return base.apply(p -> p.some().map(Mapper.toStr()));
+            case RANGE:
+                int[] range = token.getValue();
+                return base.apply(p -> p.range(range[0], range[1]).map(Mapper.toStr()));
+            case REPEAT:
+                return base.apply(p -> p.repeat(token.getValue()).map(Mapper.toStr()));
+            case OPTIONAL:
+                return base.apply(p -> p.optional());
+        }
+        throw new RuntimeException("unrecognized RepeatToken, type: " + token.getType().name());
+    }
+
+    @Data
+    @Builder
+    public static class BtContext {
+        private List<RParser> parsers;
+        private Map<Integer, String> groupResult;
+        private boolean greedy;
+        private int groupId;
+        private IBuffer buffer;
+    }
+
+    @Data
+    @Builder
+    public static class LoopObject {
+        //use by splitAt
+        private int idx;
+        //Have succeeded before
+        private boolean succeeded;
+        //Is it currently a success?
+        private boolean current;
+        //head result and tail result
+        private Pair<Result, Result> htResult;
+        private RParser headParser;
+        private boolean greedy;
+
+        public boolean isSuccess() {
+            return Pair.getLeft(htResult).isSuccess() && Pair.getRight(htResult).isSuccess();
+        }
+
+        public int getLen() {
+            return Pair.getLeft(htResult).getLength() + Pair.getRight(htResult).getLength();
+        }
+
+        public boolean end(IBuffer buffer) {
+            return this.idx > buffer.remaining() //buffer还可以切分
+                    || (!this.greedy && isSuccess()) //非贪婪模式，并且已经匹配到了
+                    || (this.headParser.getType() != RParser.ParserType.GROUP //这是一个group解析器
+                    && this.greedy && isSucceeded() && !isCurrent()); //贪婪模式，之前成功过，当前是失败的，以后肯定不会再成功
+        }
     }
 
 }

@@ -18,6 +18,7 @@ import java.util.function.Supplier;
  */
 public abstract class Parser {
     protected boolean ignore = false;
+    @Getter
     protected Deque<String> queue;
 
     @Getter
@@ -65,7 +66,7 @@ public abstract class Parser {
      */
     public Parser ignore() {
         this.ignore = true;
-        this.label = String.format("EG(%s)", this.label);
+//        this.label = String.format("EG(%s)", this.label);
         return this;
     }
 
@@ -429,12 +430,12 @@ public abstract class Parser {
      * @param parser
      * @return
      */
-    public static Parser scan(Parser stripper, Parser parser) {
-        return new Parser(parser.label, parser.queue) {
+    public Parser scan(Parser stripper) {
+        return new Parser(this.label + "scan", this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
                 while(buffer.remaining() > 0) {
-                    Result result = parser.runParser(buffer);
+                    Result result = Parser.this.runParser(buffer);
                     if (result.isSuccess()) {
                         return result;
                     }

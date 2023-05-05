@@ -1,12 +1,12 @@
 package com.jay.parser;
 
 import org.jay.parser.Result;
-import org.jay.parser.impl.regex2.RParser;
-import org.jay.parser.impl.regex2.RegexParser;
+import org.jay.parser.impl.regex.RParser;
+import org.jay.parser.impl.regex.RegexParser;
 import org.jay.parser.util.Buffer;
 import org.junit.Test;
 
-import java.util.List;
+import java.util.Optional;
 
 public class RegexParser2Tests {
 
@@ -55,7 +55,40 @@ public class RegexParser2Tests {
     }
 
     @Test
-    public void commonTest() {
-        System.out.println(List.of(1,2,3).subList(3,3).size());
+    public void testCompile() {
+        RegexParser regexParser = new RegexParser();
+        regexParser.compile("(a+)(b+)c?$");
+        Optional<String> result = regexParser.match("aaaabbbbc");
+        assert result.isPresent();
+        result = regexParser.match("ab");
+        assert result.isPresent();
+        result = regexParser.match("aabbc");
+        assert result.isPresent();
+        result = regexParser.match("aabbcc");
+        assert result.isEmpty();
+
+        regexParser.compile("^a+b+c$");
+        result = regexParser.match("aabbc");
+        assert result.isPresent();
+        result = regexParser.match("aabbcc");
+        assert result.isEmpty();
+        result = regexParser.match("abc");
+        assert result.isPresent();
+        result = regexParser.match("aaaabc");
+        assert result.isPresent();
+
+        regexParser.compile(".*abc$");
+        result = regexParser.match("abcabc");
+        assert result.isPresent();
+        result = regexParser.match("abc");
+        assert result.isPresent();
+        result = regexParser.match("abcd");
+        assert result.isEmpty();
+
+        regexParser.compile(".*(abc)+d");
+        result = regexParser.match("aaaabcabcd");
+        assert result.isPresent();
+        result = regexParser.match("aaaabcabce");
+        assert result.isEmpty();
     }
 }

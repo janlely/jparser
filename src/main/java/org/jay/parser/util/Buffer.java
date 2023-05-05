@@ -130,8 +130,8 @@ public class Buffer implements IBuffer {
                 throw new IndexOutOfBoundsException();
             }
             return new SubBuffer[] {
-                    new SubBuffer(this.p, this.p + idx, this.data),
-                    new SubBuffer(this.p + idx + 1, this.end, this.data)
+                    new SubBuffer(this.p, this.p + idx - 1, this.data),
+                    new SubBuffer(this.p + idx, this.end, this.data)
             };
         }
 

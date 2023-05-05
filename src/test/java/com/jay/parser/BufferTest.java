@@ -1,5 +1,6 @@
 package com.jay.parser;
 
+import org.jay.parser.IBuffer;
 import org.jay.parser.util.Buffer;
 import org.junit.Test;
 
@@ -23,5 +24,9 @@ public class BufferTest {
 
         assert  buffer.splitAt(8)[0].remaining() == 8;
         assert  buffer.splitAt(8)[1].remaining() == 0;
+
+        buffer = Buffer.builder().data("aaaa".getBytes()).build();
+        IBuffer[] tmp = buffer.splitAt(0);
+        System.out.println("dd");
     }
 }

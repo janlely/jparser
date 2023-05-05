@@ -1,4 +1,4 @@
-package org.jay.parser.impl.regex2;
+package org.jay.parser.impl.regex;
 
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +12,7 @@ public class RParser {
 
     private ParserType type;
     private int quoteId;
+    private int groupId;
     private Parser parser;
     private Function<Parser, Parser> func;
 
@@ -24,6 +25,6 @@ public class RParser {
         return this;
     }
     public enum ParserType {
-        PARSER,QUOTE,GROUP;
+        PARSER,QUOTE,GROUP,START;
     }
 }
