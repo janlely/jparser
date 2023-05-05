@@ -56,7 +56,7 @@ public class RegexParserTests {
     }
 
     @Test
-    public void testMatch() {
+    public void testMatch2() {
         RegexParser regexParser = new RegexParser();
         regexParser.compile("(a+)(b+)c?$");
         Optional<String> result = regexParser.match("aaaabbbbc");
@@ -91,6 +91,13 @@ public class RegexParserTests {
         assert result.isPresent();
         result = regexParser.match("aaaabcabce");
         assert result.isEmpty();
+    }
+
+    @Test
+    public void testMatch() {
+        RegexParser regexParser = new RegexParser();
+        regexParser.compile("(a+)(b+)c?$");
+        Optional<String> result = regexParser.match("aaaabbbbc");
     }
 
     @Test
