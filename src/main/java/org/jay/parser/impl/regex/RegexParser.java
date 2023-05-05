@@ -14,8 +14,6 @@ import org.jay.parser.util.F;
 import org.jay.parser.util.Mapper;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +42,7 @@ public class RegexParser {
     public Parser many() {
         return validToken()
                 .connect(TextParsers.one('*').ignore())
-                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.MANY).build(),
+                .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.MANY).build(),
                         (RParser) s.get(0)));
     }
 
@@ -55,7 +53,7 @@ public class RegexParser {
     public Parser some() {
         return validToken()
                 .connect(TextParsers.one('+').ignore())
-                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.SOME).build(),
+                .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.SOME).build(),
                         (RParser) s.get(0)));
     }
 
@@ -70,7 +68,7 @@ public class RegexParser {
                 .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
                 .connect(() -> TextParsers.one('}').ignore());
         return validToken().connect(rangeParser)
-                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.RANGE)
+                .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.RANGE)
                                 .value(new int[] {(int) s.get(1), (int) s.get(2)}).build(),
                         (RParser) s.get(0)));
     }
@@ -84,7 +82,7 @@ public class RegexParser {
                 .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
                 .connect(() -> TextParsers.one('}').ignore());
         return validToken().connect(rangeParser)
-                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.REPEAT)
+                .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.REPEAT)
                                 .value(s.get(1)).build(),
                         (RParser) s.get(0)));
     }
@@ -95,7 +93,7 @@ public class RegexParser {
      */
     public Parser optional() {
         return validToken().connect(TextParsers.one('?').ignore())
-                .map(s -> toRepeat(Token.RepeatToken.builder().type(RepeatType.OPTIONAL).build(),
+                .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.OPTIONAL).build(),
                         (RParser) s.get(0)));
     }
 
@@ -342,7 +340,7 @@ public class RegexParser {
         return ch -> !StringUtils.contains("^$+*.?{}()", ch);
     }
 
-    private RParser toRepeat(Token.RepeatToken token, RParser base) {
+    private RParser toRepeat(RepeatToken token, RParser base) {
         switch (token.getType()) {
             case MANY:
                 return base.apply(p -> p.many().map(Mapper.toStr()));

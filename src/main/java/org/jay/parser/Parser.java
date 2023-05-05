@@ -463,13 +463,12 @@ public abstract class Parser {
 
     /**
      * Backtracking-enabled connect
-     * @param head
-     * @param tail
+     * @param  parsers
      * @return
      */
-    public static Parser btConnect(boolean greedy, Parser head, List<Parser> tail) {
-        if (tail == null || tail.isEmpty()) {
-            return head;
+    public Parser btConnect(boolean greedy, List<Supplier<Parser>> parsers) {
+        if ( parsers == null ||  parsers.isEmpty()) {
+            return this;
         }
         return new Parser("ChooseParser.btChoose", new ArrayDeque<>()) {
             @Override
@@ -479,11 +478,12 @@ public abstract class Parser {
                     IBuffer[] tmp = buffer.splitAt(i);
                     IBuffer left = tmp[0];
                     IBuffer right = tmp[1];
-                    Result headResult = head.runParser(left);
+                    Result headResult = Parser.this.runParser(left);
                     if (headResult.isError()) {
                         continue;
                     }
-                    Result tailResult = btConnect(greedy, tail.get(0), tail.subList(1, tail.size())).runParser(right);
+                    Result tailResult = parsers.get(0).get()
+                            .btConnect(greedy, parsers.subList(1,  parsers.size())).runParser(right);
                     if (tailResult.isError()) {
                         continue;
                     }
@@ -503,27 +503,23 @@ public abstract class Parser {
                         }
                     }
                 }
-                return result == null ? Result.broken() : result;
+                if (result == null) {
+                    return Result.broken();
+                }
+                buffer.forward(result.getLength());
+                return result;
             }
         };
     }
 
-    public static Parser btConnect(boolean greedy, List<Parser> parsers) {
-        if (parsers == null || parsers.isEmpty()) {
-            return Parser.empty();
-        }
-        return btConnect(greedy, parsers.get(0), parsers.subList(1, parsers.size()));
-    }
-
     /**
      * Backtracking-enabled connect
-     * @param head
      * @param tail
      * @return
      */
-    public static Parser btConnect(boolean greedy, Parser head, Parser ...tail) {
+    public Parser btConnect(boolean greedy, Supplier<Parser> ...tail) {
         if (tail == null || tail.length == 0) {
-            return head;
+            return this;
         }
         return new Parser("ChooseParser.btChoose", new ArrayDeque<>()) {
             @Override
@@ -533,11 +529,13 @@ public abstract class Parser {
                     IBuffer[] tmp = buffer.splitAt(i);
                     IBuffer left = tmp[0];
                     IBuffer right = tmp[1];
-                    Result headResult = head.runParser(left);
+                    Result headResult = Parser.this.runParser(left);
                     if (headResult.isError()) {
                         continue;
                     }
-                    Result tailResult = btConnect(greedy, tail[1], ArrayUtils.subarray(tail, 1, tail.length - 1)).runParser(right);
+                    Result tailResult = tail[0].get()
+                            .btConnect(greedy, ArrayUtils.subarray(tail, 1, tail.length ))
+                            .runParser(right);
                     if (tailResult.isError()) {
                         continue;
                     }
@@ -547,6 +545,7 @@ public abstract class Parser {
                     curRes.incLen(tailResult.getLength());
                     curRes.addAll(tailResult.getResult());
                     if (!greedy) {
+                        buffer.forward(curRes.getLength());
                         return curRes;
                     }
                     if (result == null) {
@@ -557,7 +556,11 @@ public abstract class Parser {
                         }
                     }
                 }
-                return Result.broken();
+                if (result == null) {
+                    return Result.broken();
+                }
+                buffer.forward(result.getLength());
+                return result;
             }
         };
     }

@@ -22,8 +22,6 @@ public enum EscapeToken {
     RIGHT_BRACKET(ch -> ch == ')'), // \)
     LEFT_SQUARE_BRACKET(ch -> ch == '['), // \[
     RIGHT_SQUARE_BRACKET(ch -> ch == ']'), // \]
-    UP_ARROW(ch -> ch == '^'), // ^
-    DOLLAR(ch -> ch == '$'), // $
     BACKSLASH(ch -> ch == '\\'); // \\
 
     @Getter
