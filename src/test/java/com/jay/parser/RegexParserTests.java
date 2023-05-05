@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import java.util.Optional;
 
-public class RegexParser2Tests {
+public class RegexParserTests {
 
     @Test
     public void testToken() {
