@@ -1,6 +1,6 @@
 # jparser
 
-# Parser Combinator written by java
+# Parser Combinator implemented in Java
 
 Probably the most user-friendly parser in the Java language at present.
 Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jparser is capable of parsing bytes.
