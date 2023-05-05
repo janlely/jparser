@@ -6,6 +6,7 @@ import org.jay.parser.impl.regex.RegexParser;
 import org.jay.parser.util.Buffer;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Optional;
 
 public class RegexParserTests {
@@ -55,7 +56,7 @@ public class RegexParserTests {
     }
 
     @Test
-    public void testCompile() {
+    public void testMatch() {
         RegexParser regexParser = new RegexParser();
         regexParser.compile("(a+)(b+)c?$");
         Optional<String> result = regexParser.match("aaaabbbbc");
@@ -91,4 +92,15 @@ public class RegexParserTests {
         result = regexParser.match("aaaabcabce");
         assert result.isEmpty();
     }
+
+    @Test
+    public void testGroup() {
+        RegexParser regexParser = new RegexParser();
+        regexParser.compile("(a+)b\\1");
+        Optional<String> result = regexParser.match("aabaa");
+        assert result.isPresent();
+        List<String> searchResult = regexParser.search("aaabaaa");
+        assert searchResult.size() == 2;
+    }
+
 }

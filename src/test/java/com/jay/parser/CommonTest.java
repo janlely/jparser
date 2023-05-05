@@ -11,9 +11,12 @@ import org.junit.Test;
 
 import java.nio.charset.CharacterCodingException;
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class CommonTest {
 
@@ -100,5 +103,16 @@ public class CommonTest {
         System.out.println(list.get(1));
         System.out.println(list.get(2));
         stack.stream().forEach(i -> System.out.println(i));
+    }
+
+    @Test
+    public void testMapSort() {
+        Map<Integer, String> map = new HashMap<>();
+        map.put(3,"3");
+        map.put(1,"1");
+        map.put(2,"2");
+        List<String> l1 = map.entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList());
+        List<String> l2 = map.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).collect(Collectors.toList());
+        System.out.println("hello");
     }
 }

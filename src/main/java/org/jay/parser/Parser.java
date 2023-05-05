@@ -427,10 +427,9 @@ public abstract class Parser {
      *     Result result = parser.runParser(buffer);
      * }
      * @param stripper
-     * @param parser
      * @return
      */
-    public Parser scan(Parser stripper) {
+    public Parser scan(Supplier<Parser> stripper) {
         return new Parser(this.label + "scan", this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
@@ -439,7 +438,7 @@ public abstract class Parser {
                     if (result.isSuccess()) {
                         return result;
                     }
-                    result = stripper.runParser(buffer);
+                    result = stripper.get().runParser(buffer);
                     if (result.isError()) {
                         return result;
                     }

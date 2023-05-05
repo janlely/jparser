@@ -14,6 +14,8 @@ import org.jay.parser.util.F;
 import org.jay.parser.util.Mapper;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +30,6 @@ public class RegexParser {
 
     private AtomicInteger groupId;
     private Map<Integer, String> groupResult;
-
     private Parser compiledParser;
 
     public RegexParser() {
@@ -117,11 +118,22 @@ public class RegexParser {
                 () -> optional(),
                 () -> validToken()
         ).many().map(s -> {
-            return RParser.builder().parser(RegexParser.btConnect(true, groupResult, s).map(Mapper.toStr()))
+            return RParser.builder().parser(RegexParser.btConnect(true, groupResult, this.groupId, s).map(Mapper.toStr()))
                     .type(RParser.ParserType.PARSER)
-                    .groupId(this.groupId.getAndIncrement())
                     .build();
         });
+    }
+
+    public List<String> search(String src) {
+        this.groupId.set(0);
+        this.groupResult.clear();
+        Optional<String> result = match(src);
+        if (result.isPresent()) {
+            this.groupResult.put(0, result.get());
+        }
+        return this.groupResult.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(en -> en.getValue()).collect(Collectors.toList());
     }
 
     public Optional<String> match(String src) {
@@ -139,14 +151,22 @@ public class RegexParser {
                 .getResult();
         switch (parsers.size()) {
             case 1:
-                this.compiledParser = parsers.get(0).getParser().scan(TextParsers.skip(1));
+                this.compiledParser = parsers.get(0).getParser().scan(() -> {
+                    this.groupResult.clear();
+                    this.groupId.set(0);
+                    return TextParsers.skip(1);
+                });
                 break;
             case 2:
                 if (parsers.get(0).getType() == RParser.ParserType.START) {
                     this.compiledParser = parsers.get(1).getParser();
                 }else {
                     this.compiledParser = parsers.get(0).getParser()
-                            .scan(TextParsers.skip(1))
+                            .scan(() -> {
+                                this.groupResult.clear();
+                                this.groupId.set(0);
+                                return TextParsers.skip(1);
+                            })
                             .connect(() -> TextParsers.eof());
                 }
                 break;
@@ -191,7 +211,7 @@ public class RegexParser {
 
     }
 
-    public static Parser btConnect(boolean greedy, Map<Integer, String> groupResult, List<RParser> parsers) {
+    public static Parser btConnect(boolean greedy, Map<Integer,String> groupResult, AtomicInteger groupId, List<RParser> parsers) {
         if (parsers == null || parsers.isEmpty()) {
             return Parser.empty();
         }
@@ -207,16 +227,19 @@ public class RegexParser {
                 RParser headParser = parsers.get(0);
                 //处理引用
                 if (headParser.getType() == RParser.ParserType.QUOTE) {
-                    if (!groupResult.containsKey(headParser.getQuoteId())) {
+                    if (!groupResult.containsKey(headParser.getQuoteId()))  {
                         throw new InvalidRegexException("invalid group: " + headParser.getQuoteId());
                     }
                     Parser p = headParser.getFunc() == null
                             ? TextParsers.string(groupResult.get(headParser.getQuoteId()))
                             : headParser.getFunc().apply(TextParsers.string(groupResult.get(headParser.getQuoteId())));
-                    return p.connect(() -> RegexParser.btConnect(greedy, groupResult, parsers.subList(1, parsers.size())))
+                    return p.connect(() -> RegexParser.btConnect(greedy, groupResult, groupId, parsers.subList(1, parsers.size())))
                             .runParser(buffer);
                 }
                 //处理非引用
+                if (headParser.getType() == RParser.ParserType.GROUP) {
+                    headParser.setGroupId(groupId.incrementAndGet());
+                }
                 LoopObject lp = LoopObject.builder()
                         .greedy(greedy)
                         .current(false)
@@ -225,7 +248,7 @@ public class RegexParser {
                         .headParser(headParser)
                         .htResult(new Pair<>(Result.broken(), Result.broken()))
                         .build();
-                Parser tailParser = RegexParser.btConnect(greedy, groupResult, parsers.subList(1, parsers.size()));
+                Parser tailParser = RegexParser.btConnect(greedy, groupResult, groupId, parsers.subList(1, parsers.size()));
                 while(!lp.end(buffer)) {
                     IBuffer[] tmp = buffer.splitAt(lp.getIdx());
                     IBuffer left = tmp[0];
@@ -238,14 +261,14 @@ public class RegexParser {
                     }
                     lp.succeeded = true;
                     lp.current = true;
+                    //如果是group解析器就缓存group的结果
+                    if (lp.getHeadParser().getType() == RParser.ParserType.GROUP) {
+                        groupResult.put(headParser.getGroupId(), StringUtils.join(headResult.getResult(), ""));
+                    }
                     Result tailResult = tailParser.runParser(right);
                     if (tailResult.isError()) {
                         lp.idx++;
                         continue;
-                    }
-                    //如果是group解析器就缓存group的结果
-                    if (lp.getHeadParser().getType() == RParser.ParserType.GROUP) {
-                        groupResult.put(headParser.getGroupId(), StringUtils.join(headResult.getResult(), ""));
                     }
                     if (!lp.isSuccess()) {
                         lp.setHtResult(new Pair<>(headResult, tailResult));
