@@ -3,7 +3,26 @@
 # Parser Combinator implemented in Java
 
 Probably the most user-friendly parser in the Java language at present.
-Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jparser is capable of parsing bytes.
+Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jparser is capable of parsing bytes and having more features".
+
+
+## hello world
+```java
+    @Test
+    public void testHelloWorld() {
+        String date = "2023-05-01";
+        Parser dateParser = NumberParsers.anyIntStr()
+                .connect(() -> TextParsers.one('-').ignore())
+                .connect(() -> NumberParsers.anyIntStr())
+                .connect(() -> TextParsers.one('-').ignore())
+                .connect(() -> NumberParsers.anyIntStr())
+                .connect(() -> TextParsers.eof());
+        Result result = dateParser.runParser(Buffer.builder().data(date.getBytes()).build());
+        assert result.<Integer>get(0) == 2023;
+        assert result.<Integer>get(1) == 5;
+        assert result.<Integer>get(2) == 1;
+    }
+```
 
 ## Sample Usage: implement a CSV parser
 * Parser a simple csv line:

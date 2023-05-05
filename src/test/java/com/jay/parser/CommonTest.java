@@ -115,4 +115,19 @@ public class CommonTest {
         List<String> l2 = map.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).collect(Collectors.toList());
         System.out.println("hello");
     }
+
+    @Test
+    public void testHelloWorld() {
+        String date = "2023-05-01";
+        Parser dateParser = NumberParsers.anyIntStr()
+                .connect(() -> TextParsers.one('-').ignore())
+                .connect(() -> NumberParsers.anyIntStr())
+                .connect(() -> TextParsers.one('-').ignore())
+                .connect(() -> NumberParsers.anyIntStr())
+                .connect(() -> TextParsers.eof());
+        Result result = dateParser.runParser(Buffer.builder().data(date.getBytes()).build());
+        assert result.<Integer>get(0) == 2023;
+        assert result.<Integer>get(1) == 5;
+        assert result.<Integer>get(2) == 1;
+    }
 }
