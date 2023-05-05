@@ -63,6 +63,7 @@ see [XmlPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/ja
         RegexParser regexParser = new RegexParser();
         regexParser.compile("(a+)(b+)c?$");
         Optional<String> result = regexParser.match("aaaabbbbc");
+        assert result.isPresent();
     }
 
     @Test
