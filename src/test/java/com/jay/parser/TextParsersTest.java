@@ -130,7 +130,7 @@ public class TextParsersTest {
         Result result1 = TextParsers.space().runParser(Buffer.builder()
                 .data(" abdf".getBytes())
                 .build());
-        Result result2 = TextParsers.spaces().connect(() -> TextParsers.string("hello"))
+        Result result2 = TextParsers.spaces().concat(() -> TextParsers.string("hello"))
                 .runParser(Buffer.builder()
                         .data("    hello".getBytes())
                         .build());

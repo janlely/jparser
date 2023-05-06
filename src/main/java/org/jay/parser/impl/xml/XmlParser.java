@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class XmlParser {
     public static Parser parser() {
-        return nodeParser().connect(() -> TextParsers.eof());
+        return nodeParser().concat(() -> TextParsers.eof());
     }
 
     /**
@@ -38,12 +38,12 @@ public class XmlParser {
      */
     public static Parser fullParser() {
         return headParser()
-                .connect(() -> nodeParser().some().or(() -> contentParser()))
-                .connectWith(result -> {
+                .concat(() -> nodeParser().some().or(() -> contentParser()))
+                .concatWith(result -> {
                     String name = result.<XmlNode>get(0).getName();
                     return TextParsers.string("</").ignore()
-                            .connect(() -> TextParsers.string(name).trim(true))
-                            .connect(() -> TextParsers.string(">").ignore())
+                            .concat(() -> TextParsers.string(name).trim(true))
+                            .concat(() -> TextParsers.string(">").ignore())
                             .ignore();
                 }).map(values -> {
                     if (values.size() == 1) {
@@ -67,8 +67,8 @@ public class XmlParser {
      */
     public static Parser headParser() {
         return TextParsers.one('<').ignore()
-                .connect(() -> tagParser())
-                .connect(() -> TextParsers.one('>').ignore())
+                .concat(() -> tagParser())
+                .concat(() -> TextParsers.one('>').ignore())
                 .map(values -> {
                     String name = (String) values.get(0);
                     List<XmlProp> props = (List<XmlProp>) values.stream().skip(1).collect(Collectors.toList());
@@ -86,8 +86,8 @@ public class XmlParser {
      */
     public static Parser emptyParser() {
         return TextParsers.one('<').ignore()
-                .connect(() -> tagParser())
-                .connect(() -> TextParsers.string("/>").ignore())
+                .concat(() -> tagParser())
+                .concat(() -> TextParsers.string("/>").ignore())
                 .map(values -> {
                     String name = (String) values.get(0);
                     List<XmlProp> props = (List<XmlProp>) values.stream().skip(1).collect(Collectors.toList());
@@ -104,8 +104,8 @@ public class XmlParser {
      */
     public static Parser tagParser() {
         return nameParser()
-                .connect(() -> TextParsers.spaces())
-                .connect(() -> propParser().sepBy(TextParsers.spaces()).optional());
+                .concat(() -> TextParsers.spaces())
+                .concat(() -> propParser().sepBy(TextParsers.spaces()).optional());
     }
 
     /**
@@ -124,8 +124,8 @@ public class XmlParser {
     public static Parser propParser() {
         return nameParser()
                 .trim(true)
-                .connect(() -> TextParsers.one('=').ignore())
-                .connect(() -> propValueParser())
+                .concat(() -> TextParsers.one('=').ignore())
+                .concat(() -> propValueParser())
                 .map(kv -> XmlProp.builder().name((String) kv.get(0)).value((String) kv.get(1)).build());
     }
 
@@ -135,15 +135,15 @@ public class XmlParser {
      */
     public static Parser propValueParser() {
         Parser singleQuote = TextParsers.one('\'').ignore()
-                .connect(() -> valueEscapeParser().or(() ->
+                .concat(() -> valueEscapeParser().or(() ->
                         TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '\'')
                 ).many().map(Mapper.toStr()))
-                .connect(() -> TextParsers.one('\'').ignore());
+                .concat(() -> TextParsers.one('\'').ignore());
         Parser doubleQuote = TextParsers.one('"').ignore()
-                .connect(() -> valueEscapeParser().or(() ->
+                .concat(() -> valueEscapeParser().or(() ->
                         TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '"')
                 ).many().map(Mapper.toStr()))
-                .connect(() -> TextParsers.one('"').ignore());
+                .concat(() -> TextParsers.one('"').ignore());
         return singleQuote.or(() -> doubleQuote);
     }
 

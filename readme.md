@@ -1,9 +1,64 @@
 # jparser
 
-# Parser Combinator implemented in Java
+# Parser Combinater implemented in Java
 
 Probably the most user-friendly parser in the Java language at present.
 Unlike [java-petitparser](https://github.com/petitparser/java-petitparser), jparser is capable of parsing bytes and having more features".
+
+## basic parsers
+```java
+ByteParsers::satisfy //Parse a byte based on a condition.
+ByteParsers::any //Parse any byte
+ByteParsers::one //Parse a specified byte
+ByteParsers::take //Parse N arbitrary bytes.
+ByteParsers::skip //skip N arbitrary bytes.
+ByteParsers::takeWhile //Parse any number of bytes that meet a certain condition.
+ByteParsers::skipWhile //skip any number of bytes that meet a certain condition.
+
+TextParsers::satisfy //Parse a character that satisfies a condition according to the given encoding.
+TextParsers::one //Parse a character according to the given encoding
+TextParsers::string //Parse a given string according to the given encoding.
+TextParsers::any //Parse any n characters according to the specified encoding.
+TextParsers::take //Parse any n characters according to the specified encoding.
+TextParsers::takeWhile //Parse characters that satisfy a condition according to the given encoding and return a string.
+TextParsers::skip //Skip n characters of the given encoding.
+TextParsers::skipWhile //Skip characters that satisfy a condition according to the given encoding
+TextParsers::eof //end of line
+TextParsers::space //Parse one whitespace character, excluding newline characters.
+TextParsers::spaces //Parse whitespace characters, excluding newline characters.
+TextParsers::white //Parse one whitespace character
+TextParsers::whites //Parse whitespace characters
+
+NumberParsers::intStr //Parse a specified integer encoded as a string.
+NumberParsers::anyIntStr //Parse a any integer encoded as a string.
+NumberParsers::intLE //Parse a specified integer encoded in little-endian format
+NumberParsers::intBE //Parse a specified integer encoded in big-endian format
+NumberParsers::longLE //Parse a specified long integer encoded in little-endian format
+NumberParsers::longBE //Parse a specified long integer encoded in big-endian format
+NumberParsers::anyIntLE //Parse any integer encoded in little-endian format
+NumberParsers::anyIntBE //Parse any integer encoded in big-endian format
+NumberParsers::anyLongLE //Parse any long integer encoded in little-endian format
+NumberParsers::andLongBE //Parse any long integer encoded in big-endian format
+```
+## usefull combinaters
+```java
+Parser::concat //concatenate another parser
+Parser::btConcat //concatenate another parser with backtrace enabled
+Parser::concatWith //concatenate another parser generator(res -> Parser)
+Parser::or //if this parser failed than try another
+Parser::ignore //do parse, but ignore result
+Parser::map //do parse and map the result
+Parser::sepBy //parse multiply times seperate by another parser
+Parser::scan //Continuously reduce the input and attempt to parse it.
+Parser::optinal //make this parser optional
+Parser::trim //Ignore leading and trailing whitespace and attempt to parse.
+Parser::many //parse zero or more times
+Parser::some //parse one or more times
+Parser::repeat //parse n times
+Parser::range //parse bettwen m and n times
+Parser::attempt //parse zero to n times
+Parser::must //Add a predicate on the result.
+```
 
 
 ## hello world

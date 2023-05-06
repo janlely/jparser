@@ -93,6 +93,14 @@ public class ByteParsers {
         return any().repeat(n).map(Mapper.toBytes());
     }
 
+    /**
+     * takeWhile
+     * @return
+     */
+    public static Parser takeWhile(Predicate<Byte> p) {
+        return satisfy(p).many().map(Mapper.toBytes());
+    }
+
 
     /**
      *
@@ -102,5 +110,13 @@ public class ByteParsers {
      */
     public static Parser skip(int n) {
         return take(n).ignore();
+    }
+
+    /**
+     * skipWhile
+     * @return
+     */
+    public static Parser skipWhile(Predicate<Byte> p) {
+        return satisfy(p).many().ignore();
     }
 }

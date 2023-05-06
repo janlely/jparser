@@ -40,7 +40,7 @@ public class RegexParser {
      */
     public Parser many() {
         return validToken()
-                .connect(TextParsers.one('*').ignore())
+                .concat(TextParsers.one('*').ignore())
                 .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.MANY).build(),
                         (RParser) s.get(0)));
     }
@@ -51,7 +51,7 @@ public class RegexParser {
      */
     public Parser some() {
         return validToken()
-                .connect(TextParsers.one('+').ignore())
+                .concat(TextParsers.one('+').ignore())
                 .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.SOME).build(),
                         (RParser) s.get(0)));
     }
@@ -62,11 +62,11 @@ public class RegexParser {
      */
     public Parser range() {
         Parser rangeParser = TextParsers.one('{').ignore()
-                .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
-                .connect(() -> TextParsers.one(',').ignore())
-                .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
-                .connect(() -> TextParsers.one('}').ignore());
-        return validToken().connect(rangeParser)
+                .concat(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
+                .concat(() -> TextParsers.one(',').ignore())
+                .concat(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
+                .concat(() -> TextParsers.one('}').ignore());
+        return validToken().concat(rangeParser)
                 .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.RANGE)
                                 .value(new int[] {(int) s.get(1), (int) s.get(2)}).build(),
                         (RParser) s.get(0)));
@@ -78,9 +78,9 @@ public class RegexParser {
      */
     public Parser repeat() {
         Parser rangeParser = TextParsers.one('{').ignore()
-                .connect(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
-                .connect(() -> TextParsers.one('}').ignore());
-        return validToken().connect(rangeParser)
+                .concat(() -> TextParsers.satisfy(Character::isDigit).many().map(Mapper.toStr()).map(Mapper.toInt()))
+                .concat(() -> TextParsers.one('}').ignore());
+        return validToken().concat(rangeParser)
                 .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.REPEAT)
                                 .value(s.get(1)).build(),
                         (RParser) s.get(0)));
@@ -91,7 +91,7 @@ public class RegexParser {
      * @return
      */
     public Parser optional() {
-        return validToken().connect(TextParsers.one('?').ignore())
+        return validToken().concat(TextParsers.one('?').ignore())
                 .map(s -> toRepeat(RepeatToken.builder().type(RepeatType.OPTIONAL).build(),
                         (RParser) s.get(0)));
     }
@@ -135,7 +135,7 @@ public class RegexParser {
                 });
             }
             if (rp.getType() == RParser.ParserType.QUOTE) {
-                return Parser.empty().connect(() -> {
+                return Parser.empty().concat(() -> {
                     if (!groupResult.containsKey(rp.getQuoteId())) {
                         throw new InvalidRegexException("invalid group: " + rp.getQuoteId());
                     }
@@ -190,8 +190,8 @@ public class RegexParser {
     }
     public void compile(String regex) {
         Parser parserParser = start().optional()
-                .connect(() -> parser())
-                .connect(() -> end().optional());
+                .concat(() -> parser())
+                .concat(() -> end().optional());
         List<RParser> parsers = parserParser.runParser(Buffer.builder().data(regex.getBytes()).build())
                 .getResult();
         switch (parsers.size()) {
@@ -215,12 +215,12 @@ public class RegexParser {
                                 this.groupId.set(0);
                                 return TextParsers.skip(1);
                             })
-                            .connect(() -> TextParsers.eof());
+                            .concat(() -> TextParsers.eof());
                 }
                 break;
             case 3:
                 //including the head(^) and tail($), followed by a eof() and scanning is required
-                this.compiledParser = parsers.get(1).getParser().connect(() -> TextParsers.eof());
+                this.compiledParser = parsers.get(1).getParser().concat(() -> TextParsers.eof());
                 break;
         }
     }
@@ -237,13 +237,13 @@ public class RegexParser {
                         .parser(TextParsers.satisfy(F.not(Character::isISOControl)))
                         .build())),
                 () -> TextParsers.one('[').ignore()
-                        .connect(() -> select())
-                        .connect(() -> TextParsers.one(']').ignore())
+                        .concat(() -> select())
+                        .concat(() -> TextParsers.one(']').ignore())
                         .map(s -> RParser.builder()
                                 .type(RParser.ParserType.PARSER)
                                 .parser(TextParsers.satisfy((Predicate<Character>) s.get(0))).build()),
                 () -> TextParsers.one('\\').ignore()
-                        .connect(() -> NumberParsers.anyIntStr())
+                        .concat(() -> NumberParsers.anyIntStr())
                         .map(s -> RParser.builder()
                                 .type(RParser.ParserType.QUOTE)
                                 .quoteId((int) s.get(0))
@@ -253,8 +253,8 @@ public class RegexParser {
                         .parser(TextParsers.satisfy(ch -> ch == s.get(0)))
                         .build()),
                 () -> TextParsers.one('(').ignore()
-                        .connect(() -> parser())
-                        .connect(() ->TextParsers.one(')').ignore())
+                        .concat(() -> parser())
+                        .concat(() ->TextParsers.one(')').ignore())
                         .map(s -> {
                             RParser rp = RParser.class.cast(s.get(0));
                             rp.setType(RParser.ParserType.GROUP);
@@ -294,15 +294,15 @@ public class RegexParser {
      */
     public static Parser select() {
         Parser range = TextParsers.satisfy(Character::isLetterOrDigit)
-                .connect(() -> TextParsers.one('-').ignore())
-                .connect(() -> TextParsers.satisfy(Character::isLetterOrDigit))
+                .concat(() -> TextParsers.one('-').ignore())
+                .concat(() -> TextParsers.satisfy(Character::isLetterOrDigit))
                 .map(s -> (Predicate<Character>) character -> character >= (Character) s.get(0) && (Character) s.get(1) >= character);
         Function<List, ?> mapper = s -> (Predicate<Character>) character -> {
             Optional<Predicate> p = s.stream().reduce((a, b) -> (Predicate<Character>) x -> Predicate.class.cast(a).test(x) || Predicate.class.cast(b).test(x));
             return p.get().test(character);
         };
         return TextParsers.one('^').optional()
-                .connect(() -> Parser.choose(
+                .concat(() -> Parser.choose(
                         range,
                         TextParsers.string("\\[").map(Mapper.replace('[')),
                         TextParsers.string("\\]").map(Mapper.replace(']')),

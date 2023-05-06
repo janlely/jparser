@@ -81,7 +81,7 @@ public abstract class Parser {
      * @param generator
      * @return
      */
-    public Parser connectWith(Function<Result, Parser> generator) {
+    public Parser concatWith(Function<Result, Parser> generator) {
         return new Parser(this.label + "--", this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
@@ -108,7 +108,7 @@ public abstract class Parser {
      * @param parser
      * @return
      */
-    public Parser connect(Parser parser) {
+    public Parser concat(Parser parser) {
         return new Parser(this.label + "--", this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
@@ -135,7 +135,7 @@ public abstract class Parser {
      * @param parser
      * @return
      */
-    public Parser connect(Supplier<Parser> parser) {
+    public Parser concat(Supplier<Parser> parser) {
         return new Parser(this.label + "--", this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
@@ -242,7 +242,7 @@ public abstract class Parser {
      * @return
      */
     public Parser range(int from, int end) {
-        return repeat(from).connect(() -> attempt(end - from));
+        return repeat(from).concat(() -> attempt(end - from));
     }
 
     /**
@@ -345,11 +345,11 @@ public abstract class Parser {
      */
     public Parser trim(boolean includeNewline) {
         if (includeNewline) {
-            return TextParsers.whites().connect(() -> this)
-                    .connect(() -> TextParsers.whites());
+            return TextParsers.whites().concat(() -> this)
+                    .concat(() -> TextParsers.whites());
         }
-        return TextParsers.spaces().connect(() -> this)
-                .connect(() -> TextParsers.spaces());
+        return TextParsers.spaces().concat(() -> this)
+                .concat(() -> TextParsers.spaces());
     }
 
     /**
@@ -358,7 +358,7 @@ public abstract class Parser {
      * @return
      */
     public Parser sepBy(Parser parser) {
-        return connect(() -> parser.connect(() -> this).many());
+        return concat(() -> parser.concat(() -> this).many());
     }
 
 
@@ -456,7 +456,7 @@ public abstract class Parser {
      * @param  parsers
      * @return
      */
-    public Parser btConnect(boolean greedy, List<Supplier<Parser>> parsers) {
+    public Parser btConcat(boolean greedy, List<Supplier<Parser>> parsers) {
         return new BacktraceParser(greedy, this, parsers);
     }
 
@@ -466,7 +466,7 @@ public abstract class Parser {
      * @param tail
      * @return
      */
-    public Parser btConnect(boolean greedy, Supplier<Parser> ...tail) {
+    public Parser btConcat(boolean greedy, Supplier<Parser> ...tail) {
         return new BacktraceParser(greedy, this, tail);
     }
 
