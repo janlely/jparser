@@ -102,4 +102,16 @@ public class BaseTests {
         assert result.<Character>get(2).equals('c');
     }
 
+    @Test
+    public void testBtConnect() {
+        Parser parser = TextParsers.any().many()
+                .btConnect(true, () -> TextParsers.one('a'))
+                .map(Mapper.toStr());
+        Result result = parser.runParser(Buffer.builder()
+                .data("abcdab".getBytes())
+                .build());
+        assert result.isSuccess();
+        assert result.<String>get(0).equals("abcda");
+    }
+
 }

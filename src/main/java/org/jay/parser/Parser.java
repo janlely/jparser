@@ -1,7 +1,7 @@
 package org.jay.parser;
 
 import lombok.Getter;
-import org.apache.commons.lang3.ArrayUtils;
+import org.jay.parser.comb.BacktraceParser;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.ErrorUtil;
 
@@ -20,14 +20,6 @@ public abstract class Parser {
     protected boolean ignore = false;
     @Getter
     protected Deque<String> queue;
-
-    @Getter
-    private boolean isKiller = false;
-
-    public Parser killer() {
-        this.isKiller = true;
-        return this;
-    }
 
     public Parser(String label) {
         this.label = label;
@@ -53,7 +45,8 @@ public abstract class Parser {
         return this;
     }
 
-    private String label;
+    @Getter
+    protected String label;
 
     public boolean isIgnore() {
         return this.ignore;
@@ -116,9 +109,6 @@ public abstract class Parser {
      * @return
      */
     public Parser connect(Parser parser) {
-        if (parser.isKiller) {
-            return parser;
-        }
         return new Parser(this.label + "--", this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
@@ -467,50 +457,9 @@ public abstract class Parser {
      * @return
      */
     public Parser btConnect(boolean greedy, List<Supplier<Parser>> parsers) {
-        if ( parsers == null ||  parsers.isEmpty()) {
-            return this;
-        }
-        return new Parser("ChooseParser.btChoose", new ArrayDeque<>()) {
-            @Override
-            public Result parse(IBuffer buffer) {
-                Result result = null;
-                for(int i = 0; i <= buffer.remaining(); i++) {
-                    IBuffer[] tmp = buffer.splitAt(i);
-                    IBuffer left = tmp[0];
-                    IBuffer right = tmp[1];
-                    Result headResult = Parser.this.runParser(left);
-                    if (headResult.isError()) {
-                        continue;
-                    }
-                    Result tailResult = parsers.get(0).get()
-                            .btConnect(greedy, parsers.subList(1,  parsers.size())).runParser(right);
-                    if (tailResult.isError()) {
-                        continue;
-                    }
-                    Result curRes = Result.empty();
-                    curRes.incLen(headResult.getLength());
-                    curRes.addAll(headResult.getResult());
-                    curRes.incLen(tailResult.getLength());
-                    curRes.addAll(tailResult.getResult());
-                    if (!greedy) {
-                        return curRes;
-                    }
-                    if (result == null) {
-                        result = curRes;
-                    }else {
-                        if (result.getLength() < curRes.getLength()) {
-                            result = curRes;
-                        }
-                    }
-                }
-                if (result == null) {
-                    return Result.broken();
-                }
-                buffer.forward(result.getLength());
-                return result;
-            }
-        };
+        return new BacktraceParser(greedy, this, parsers);
     }
+
 
     /**
      * Backtracking-enabled connect
@@ -518,51 +467,7 @@ public abstract class Parser {
      * @return
      */
     public Parser btConnect(boolean greedy, Supplier<Parser> ...tail) {
-        if (tail == null || tail.length == 0) {
-            return this;
-        }
-        return new Parser("ChooseParser.btChoose", new ArrayDeque<>()) {
-            @Override
-            public Result parse(IBuffer buffer) {
-                Result result = null;
-                for(int i = 0; i <= buffer.remaining(); i++) {
-                    IBuffer[] tmp = buffer.splitAt(i);
-                    IBuffer left = tmp[0];
-                    IBuffer right = tmp[1];
-                    Result headResult = Parser.this.runParser(left);
-                    if (headResult.isError()) {
-                        continue;
-                    }
-                    Result tailResult = tail[0].get()
-                            .btConnect(greedy, ArrayUtils.subarray(tail, 1, tail.length ))
-                            .runParser(right);
-                    if (tailResult.isError()) {
-                        continue;
-                    }
-                    Result curRes = Result.empty();
-                    curRes.incLen(headResult.getLength());
-                    curRes.addAll(headResult.getResult());
-                    curRes.incLen(tailResult.getLength());
-                    curRes.addAll(tailResult.getResult());
-                    if (!greedy) {
-                        buffer.forward(curRes.getLength());
-                        return curRes;
-                    }
-                    if (result == null) {
-                        result = curRes;
-                    }else {
-                        if (result.getLength() < curRes.getLength()) {
-                            result = curRes;
-                        }
-                    }
-                }
-                if (result == null) {
-                    return Result.broken();
-                }
-                buffer.forward(result.getLength());
-                return result;
-            }
-        };
+        return new BacktraceParser(greedy, this, tail);
     }
 
     /**

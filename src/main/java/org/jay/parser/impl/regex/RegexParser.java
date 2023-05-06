@@ -1,20 +1,16 @@
 package org.jay.parser.impl.regex;
 
-import com.fasterxml.jackson.core.io.MergedStream;
-import lombok.Builder;
-import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
-import org.brick.common.types.Pair;
-import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
+import org.jay.parser.comb.BacktraceParser;
 import org.jay.parser.parsers.NumberParsers;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Buffer;
 import org.jay.parser.util.F;
 import org.jay.parser.util.Mapper;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,18 +18,20 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RegexParser {
 
     private AtomicInteger groupId;
     private Map<Integer, String> groupResult;
+    private Map<Integer, String> finalGroup;
     private Parser compiledParser;
 
     public RegexParser() {
         this.groupId = new AtomicInteger(0);
         this.groupResult = new HashMap<>();
+        this.finalGroup = new HashMap<>();
     }
 
     /**
@@ -117,20 +115,68 @@ public class RegexParser {
                 () -> optional(),
                 () -> validToken()
         ).many().map(s -> {
-            return RParser.builder().parser(RegexParser.btConnect(true, groupResult, this.groupId, s).map(Mapper.toStr()))
+            return RParser.builder().parser(chain(s).map(Mapper.toStr()))
                     .type(RParser.ParserType.PARSER)
                     .build();
         });
     }
 
-    public List<String> search(String src) {
+    private Parser chain(List<RParser> rParsers) {
+        List<Parser> parsers = rParsers.stream().map(rp -> {
+            if (rp.getType() == RParser.ParserType.GROUP) {
+                return new AopParser(rp.getParser(), () -> {
+                    if (rp.getGroupId() == 0) {
+                        rp.setGroupId(groupId.incrementAndGet());
+                    }
+                }, res -> {
+                    if (res.isSuccess()) {
+                        groupResult.put(rp.getGroupId(), res.get(0));
+                    }
+                });
+            }
+            if (rp.getType() == RParser.ParserType.QUOTE) {
+                return Parser.empty().connect(() -> {
+                    if (!groupResult.containsKey(rp.getQuoteId())) {
+                        throw new InvalidRegexException("invalid group: " + rp.getQuoteId());
+                    }
+                    return TextParsers.string(groupResult.get(rp.getQuoteId()));
+                });
+            }
+            return rp.getParser();
+        }).collect(Collectors.toList());
+        if (parsers.isEmpty()) {
+            throw new RuntimeException("No RParser to chain");
+        }
+        if (parsers.size() == 1) {
+            return parsers.get(0);
+        }
+        List<Supplier<Parser>> tail = new ArrayList<>();
+        for(int i = 0; i < parsers.size(); i++) {
+            int idx = i;
+            tail.add(() -> parsers.get(idx));
+        }
+
+        BacktraceParser parser = new BacktraceParser(true, tail);
+        parser.setRunnable(() -> {
+            this.finalGroup.putAll(groupResult);
+        });
+        return parser;
+    }
+
+
+    private void clean() {
         this.groupId.set(0);
         this.groupResult.clear();
+        this.finalGroup.clear();
+    }
+    public List<String> search(String src) {
+        clean();
         Optional<String> result = match(src);
         if (result.isPresent()) {
             this.groupResult.put(0, result.get());
         }
-        return this.groupResult.entrySet().stream()
+        this.finalGroup.put(0, result.get());
+        return this.finalGroup.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(en -> en.getValue()).collect(Collectors.toList());
     }
@@ -219,94 +265,6 @@ public class RegexParser {
     }
 
     /**
-     * backtrace enabled connect
-     * @param greedy
-     * @param groupResult
-     * @param groupId
-     * @param parsers
-     * @return
-     */
-    public static Parser btConnect(boolean greedy, Map<Integer,String> groupResult, AtomicInteger groupId, List<RParser> parsers) {
-        if (parsers == null || parsers.isEmpty()) {
-            return Parser.empty();
-        }
-        List<String> labels = parsers.stream().flatMap(r -> {
-            if (r.getType() == RParser.ParserType.QUOTE) {
-                return Stream.of("QUOTE + " + r.getQuoteId());
-            }
-            return r.getParser().getQueue().stream();
-        }).collect(Collectors.toList());
-        return new Parser("RegexParser.btConnect", new ArrayDeque<>(labels)) {
-            @Override
-            public Result parse(IBuffer buffer) {
-                RParser headParser = parsers.get(0);
-                //处理引用
-                if (headParser.getType() == RParser.ParserType.QUOTE) {
-                    if (!groupResult.containsKey(headParser.getQuoteId()))  {
-                        throw new InvalidRegexException("invalid group: " + headParser.getQuoteId());
-                    }
-                    Parser p = headParser.getFunc() == null
-                            ? TextParsers.string(groupResult.get(headParser.getQuoteId()))
-                            : headParser.getFunc().apply(TextParsers.string(groupResult.get(headParser.getQuoteId())));
-                    return p.connect(() -> RegexParser.btConnect(greedy, groupResult, groupId, parsers.subList(1, parsers.size())))
-                            .runParser(buffer);
-                }
-                //处理非引用
-                if (headParser.getType() == RParser.ParserType.GROUP && headParser.getGroupId() == 0) {
-                    headParser.setGroupId(groupId.incrementAndGet());
-                }
-                LoopObject lp = LoopObject.builder()
-                        .greedy(greedy)
-                        .current(false)
-                        .succeeded(false)
-                        .idx(0)
-                        .headParser(headParser)
-                        .build();
-                Parser tailParser = RegexParser.btConnect(greedy, groupResult, groupId, parsers.subList(1, parsers.size()));
-                while(!lp.end(buffer)) {
-                    IBuffer[] tmp = buffer.splitAt(lp.getIdx());
-                    IBuffer left = tmp[0];
-                    IBuffer right = tmp[1];
-                    Result headResult = headParser.getParser().runParser(left);
-                    if (headResult.isError()) {
-                        lp.current = false;
-                        lp.idx++;
-                        continue;
-                    }
-                    lp.succeeded = true;
-                    lp.current = true;
-                    //如果是group解析器就缓存group的结果
-                    if (headParser.getType() == RParser.ParserType.GROUP) {
-                        groupResult.put(headParser.getGroupId(), StringUtils.join(headResult.getResult(), ""));
-                    }
-                    Result tailResult = tailParser.runParser(right);
-                    if (tailResult.isError()) {
-                        lp.idx++;
-                        continue;
-                    }
-                    //头一次正确匹配
-                    if (!lp.isSuccess()) {
-                        lp.setBest(new Pair<>(merge(headResult, tailResult),
-                                groupResult.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
-                    }
-                    //当前结果比之前的更长
-                    if (lp.isSuccess() && lp.getLen() < headResult.getLength() + tailResult.getLength()) {
-                        lp.setBest(new Pair<>(merge(headResult, tailResult),
-                                groupResult.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
-                    }
-                    lp.idx++;
-                }
-                if (!lp.isSuccess()) {
-                    return Result.broken();
-                }
-                buffer.forward(lp.getLen());
-                groupResult.putAll(Pair.getRight(lp.getBest()));
-                return Pair.getLeft(lp.getBest());
-            }
-        };
-    }
-
-    /**
      * \s \S \w \W ....
      * @return
      */
@@ -364,15 +322,6 @@ public class RegexParser {
         return ch -> !StringUtils.contains("^$+*.?{}()", ch);
     }
 
-    private static Result merge(Result left, Result right) {
-        Result result = Result.empty();
-        result.addAll(left.getResult());
-        result.addAll(right.getResult());
-        result.incLen(left.getLength());
-        result.incLen(right.getLength());
-        return result;
-    }
-
     /**
      * validToken + repeat
      * @param token
@@ -394,38 +343,6 @@ public class RegexParser {
                 return base.apply(p -> p.optional());
         }
         throw new RuntimeException("unrecognized RepeatToken, type: " + token.getType().name());
-    }
-
-    @Data
-    @Builder
-    public static class LoopObject {
-        //use by splitAt
-        private int idx;
-        //Have succeeded before
-        private boolean succeeded;
-        //Is it currently a success?
-        private boolean current;
-        //head result and tail result
-//        private Pair<Result, Result> htResult;
-        private Pair<Result, Map<Integer,String>> best;
-        private RParser headParser;
-        private boolean greedy;
-
-        public boolean isSuccess() {
-            return this.best != null && Pair.getLeft(this.best).isSuccess();
-        }
-
-        public int getLen() {
-            return Pair.getLeft(this.best).getLength();
-//            return Pair.getLeft(htResult).getLength() + Pair.getRight(htResult).getLength();
-        }
-
-        public boolean end(IBuffer buffer) {
-            return this.idx > buffer.remaining() //buffer还可以切分
-                    || (!this.greedy && isSuccess()) //非贪婪模式，并且已经匹配到了
-                    || (this.headParser.getType() != RParser.ParserType.GROUP //这是一个group解析器
-                    && this.greedy && isSucceeded() && !isCurrent()); //贪婪模式，之前成功过，当前是失败的，以后肯定不会再成功
-        }
     }
 
 }
