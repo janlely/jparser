@@ -97,10 +97,20 @@ public class RegexParserTests {
     public void testGroup() {
         RegexParser regexParser = new RegexParser();
         regexParser.compile("(a+)b\\1");
-        Optional<String> result = regexParser.match("aabaa");
-        assert result.isPresent();
-        List<String> searchResult = regexParser.search("aaabaaa");
-        assert searchResult.size() == 2;
+        Optional<String> result1 = regexParser.match("aabaa");
+        assert result1.isPresent();
+        List<String> searchResult1 = regexParser.search("aaabaaa");
+        assert searchResult1.size() == 2;
+
+
+        regexParser.compile("(a+)(b+)\\1\\2");
+        Optional<String> result2 = regexParser.match("aabbaabb");
+        assert result2.isPresent();
+        List<String> searchResult2 = regexParser.search("aabbaabb");
+        assert searchResult2.size() == 3;
+        assert searchResult2.get(0).equals("aabbaabb");
+        assert searchResult2.get(1).equals("aa");
+        assert searchResult2.get(2).equals("bb");
     }
 
 }

@@ -1,5 +1,6 @@
 package org.jay.parser.impl.regex;
 
+import com.fasterxml.jackson.core.io.MergedStream;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -218,7 +219,7 @@ public class RegexParser {
     }
 
     /**
-     * backtracing enabled connect
+     * backtrace enabled connect
      * @param greedy
      * @param groupResult
      * @param groupId
@@ -251,7 +252,7 @@ public class RegexParser {
                             .runParser(buffer);
                 }
                 //处理非引用
-                if (headParser.getType() == RParser.ParserType.GROUP) {
+                if (headParser.getType() == RParser.ParserType.GROUP && headParser.getGroupId() == 0) {
                     headParser.setGroupId(groupId.incrementAndGet());
                 }
                 LoopObject lp = LoopObject.builder()
@@ -260,7 +261,6 @@ public class RegexParser {
                         .succeeded(false)
                         .idx(0)
                         .headParser(headParser)
-                        .htResult(new Pair<>(Result.broken(), Result.broken()))
                         .build();
                 Parser tailParser = RegexParser.btConnect(greedy, groupResult, groupId, parsers.subList(1, parsers.size()));
                 while(!lp.end(buffer)) {
@@ -276,7 +276,7 @@ public class RegexParser {
                     lp.succeeded = true;
                     lp.current = true;
                     //如果是group解析器就缓存group的结果
-                    if (lp.getHeadParser().getType() == RParser.ParserType.GROUP) {
+                    if (headParser.getType() == RParser.ParserType.GROUP) {
                         groupResult.put(headParser.getGroupId(), StringUtils.join(headResult.getResult(), ""));
                     }
                     Result tailResult = tailParser.runParser(right);
@@ -284,25 +284,24 @@ public class RegexParser {
                         lp.idx++;
                         continue;
                     }
+                    //头一次正确匹配
                     if (!lp.isSuccess()) {
-                        lp.setHtResult(new Pair<>(headResult, tailResult));
+                        lp.setBest(new Pair<>(merge(headResult, tailResult),
+                                groupResult.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
                     }
-                    //当前结果不是最长的，取之前更长的
+                    //当前结果比之前的更长
                     if (lp.isSuccess() && lp.getLen() < headResult.getLength() + tailResult.getLength()) {
-                        lp.setHtResult(new Pair<>(headResult, tailResult));
+                        lp.setBest(new Pair<>(merge(headResult, tailResult),
+                                groupResult.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
                     }
                     lp.idx++;
                 }
                 if (!lp.isSuccess()) {
                     return Result.broken();
                 }
-                Result result = Result.empty();
-                result.addAll(Pair.getLeft(lp.getHtResult()).getResult());
-                result.addAll(Pair.getRight(lp.getHtResult()).getResult());
-                result.incLen(Pair.getLeft(lp.getHtResult()).getLength());
-                result.incLen(Pair.getRight(lp.getHtResult()).getLength());
-                buffer.forward(result.getLength());
-                return result;
+                buffer.forward(lp.getLen());
+                groupResult.putAll(Pair.getRight(lp.getBest()));
+                return Pair.getLeft(lp.getBest());
             }
         };
     }
@@ -365,6 +364,15 @@ public class RegexParser {
         return ch -> !StringUtils.contains("^$+*.?{}()", ch);
     }
 
+    private static Result merge(Result left, Result right) {
+        Result result = Result.empty();
+        result.addAll(left.getResult());
+        result.addAll(right.getResult());
+        result.incLen(left.getLength());
+        result.incLen(right.getLength());
+        return result;
+    }
+
     /**
      * validToken + repeat
      * @param token
@@ -398,16 +406,18 @@ public class RegexParser {
         //Is it currently a success?
         private boolean current;
         //head result and tail result
-        private Pair<Result, Result> htResult;
+//        private Pair<Result, Result> htResult;
+        private Pair<Result, Map<Integer,String>> best;
         private RParser headParser;
         private boolean greedy;
 
         public boolean isSuccess() {
-            return Pair.getLeft(htResult).isSuccess() && Pair.getRight(htResult).isSuccess();
+            return this.best != null && Pair.getLeft(this.best).isSuccess();
         }
 
         public int getLen() {
-            return Pair.getLeft(htResult).getLength() + Pair.getRight(htResult).getLength();
+            return Pair.getLeft(this.best).getLength();
+//            return Pair.getLeft(htResult).getLength() + Pair.getRight(htResult).getLength();
         }
 
         public boolean end(IBuffer buffer) {
