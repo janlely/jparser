@@ -97,12 +97,14 @@ public class BacktraceParser extends Parser {
                 return merge(headResult, tailResult);
             }
             if (!lp.isSuccess()) {
+                //the outermost result
                 if (thisHead == 1) {
                     runnable.run();
                 }
                 lp.setBest(merge(headResult, tailResult));
             }
             if (lp.getLen() < headResult.getLength() + tailResult.getLength()) {
+                //the outermost result
                 if (thisHead == 1) {
                     runnable.run();
                 }
