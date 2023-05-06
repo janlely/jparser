@@ -80,6 +80,9 @@ Parser::choose //concat of Parser::or
     }
 ```
 
+## advanced usage:
+* to parse any input: implement IBuffer
+
 ## Sample Usage: implement a CSV parser
 * Parser a simple csv line:
 ```java
