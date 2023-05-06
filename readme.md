@@ -58,6 +58,7 @@ Parser::repeat //parse n times
 Parser::range //parse bettwen m and n times
 Parser::attempt //parse zero to n times
 Parser::must //Add a predicate on the result.
+Parser::choose //concat of Parser::or
 ```
 
 
