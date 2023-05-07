@@ -270,21 +270,21 @@ public class RegexParser {
      */
     public Parser escape() {
         return Parser.choose(
-                TextParsers.string("\\s").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.WHITE.getPredicate())).build())),
-                TextParsers.string("\\S").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_WHITE.getPredicate())).build())),
-                TextParsers.string("\\d").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.DIGIT.getPredicate())).build())),
-                TextParsers.string("\\D").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_DIGIT.getPredicate())).build())),
-                TextParsers.string("\\w").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.WORD.getPredicate())).build())),
-                TextParsers.string("\\W").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_WORD.getPredicate())).build())),
-                TextParsers.string("\\.").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.DOT.getPredicate())).build())),
-                TextParsers.string("\\(").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.LEFT_BRACKET.getPredicate())).build())),
-                TextParsers.string("\\)").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.RIGHT_BRACKET.getPredicate())).build())),
-                TextParsers.string("\\[").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.LEFT_SQUARE_BRACKET.getPredicate())).build())),
-                TextParsers.string("\\]").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.RIGHT_SQUARE_BRACKET.getPredicate())).build())),
-                TextParsers.string("\\\\").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.BACKSLASH.getPredicate())).build())),
-                TextParsers.string("\\+").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.PLUS.getPredicate())).build())),
-                TextParsers.string("\\*").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.STAR.getPredicate())).build())),
-                TextParsers.string("\\?").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.QUESTION_MARK.getPredicate())).build()))
+                () -> TextParsers.string("\\s").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.WHITE.getPredicate())).build())),
+                () -> TextParsers.string("\\S").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_WHITE.getPredicate())).build())),
+                () -> TextParsers.string("\\d").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.DIGIT.getPredicate())).build())),
+                () -> TextParsers.string("\\D").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_DIGIT.getPredicate())).build())),
+                () -> TextParsers.string("\\w").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.WORD.getPredicate())).build())),
+                () -> TextParsers.string("\\W").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.NON_WORD.getPredicate())).build())),
+                () -> TextParsers.string("\\.").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.DOT.getPredicate())).build())),
+                () -> TextParsers.string("\\(").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.LEFT_BRACKET.getPredicate())).build())),
+                () -> TextParsers.string("\\)").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.RIGHT_BRACKET.getPredicate())).build())),
+                () -> TextParsers.string("\\[").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.LEFT_SQUARE_BRACKET.getPredicate())).build())),
+                () -> TextParsers.string("\\]").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.RIGHT_SQUARE_BRACKET.getPredicate())).build())),
+                () -> TextParsers.string("\\\\").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.BACKSLASH.getPredicate())).build())),
+                () -> TextParsers.string("\\+").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.PLUS.getPredicate())).build())),
+                () -> TextParsers.string("\\*").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.STAR.getPredicate())).build())),
+                () -> TextParsers.string("\\?").map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.satisfy(EscapeToken.QUESTION_MARK.getPredicate())).build()))
         );
     }
 
@@ -303,10 +303,10 @@ public class RegexParser {
         };
         return TextParsers.one('^').optional()
                 .chain(() -> Parser.choose(
-                        range,
-                        TextParsers.string("\\[").map(Mapper.replace('[')),
-                        TextParsers.string("\\]").map(Mapper.replace(']')),
-                        TextParsers.satisfy(F.noneOf(Character::isISOControl, ch -> ch == ']'))
+                        () -> range,
+                        () -> TextParsers.string("\\[").map(Mapper.replace('[')),
+                        () -> TextParsers.string("\\]").map(Mapper.replace(']')),
+                        () -> TextParsers.satisfy(F.noneOf(Character::isISOControl, ch -> ch == ']'))
                                 .map(s -> (Predicate<Character>) character -> character == s.get(0))
                 ).some().map(mapper))
                 .map(s -> {
