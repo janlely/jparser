@@ -112,17 +112,69 @@ see [CSVParser](https://github.com/janlely/jparser/blob/main/src/main/java/org/j
 
 ## Sample Usage: implement a Json parser
 ```java
-    String source1 = "  {\"hello\":\"world\",\"array\":[\"a\",{\"b\":\"c\"},null,123.4],\"name\":\"jay\"}  ";
-    Result result1 = JsonParser.parser().runParser(Buffer.builder()
-            .data(source1.getBytes())
-            .build());
-    assert result1.isSuccess();
+    public static Parser jsonParser() {
+        return stringParser()
+                .or(() -> objectParser().trim(true))
+                .or(() -> arrayParser().trim(true))
+                .or(() -> nullParser().trim(true))
+                .or(() -> boolParser().trim(true))
+                .or(() -> numberParser().trim(true))
+                .trim(true);
+    }
+
+    public static Parser objectParser() {
+        return TextParsers.one('{').ignore()
+                .chain(() -> membersParser())
+                .chain(() -> TextParsers.one('}').ignore());
+    }
+
+    public static Parser arrayParser() {
+        return TextParsers.one('[').ignore()
+                .chain(() -> jsonParser().sepBy(TextParsers.one(',').ignore()))
+                .chain(() -> TextParsers.one(']').ignore())
+                .map(ary -> JsonValue.builder()
+                        .type(JsonType.ARRAY)
+                        .value(new JsonArray().addAll(ary))
+                        .build());
+    }
+
+    public static Parser membersParser() {
+        ...
+    }
+    ...
+
+
+    @Test
+    public void test() {
+        String source1 = "  {\"hello\":\"world\",\"array\":[\"a\",{\"b\":\"c\"},null,123.4],\"name\":\"jay\"}  ";
+        Result result1 = JsonParser.parser().runParser(Buffer.builder()
+                .data(source1.getBytes())
+                .build());
+        assert result1.isSuccess();
+    }
 ```
 see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/json/JsonParser.java)
 
 
 ## Sample Usage: implement a XML parser
 ```java
+    /**
+     * Parse a full xml: <tag> content or children node </tag>
+     * @return
+     */
+    public static Parser fullParser() {
+        return headParser()
+                .chain(() -> nodeParser().some().or(() -> contentParser()))
+                .chainWith(result -> {
+                    String name = result.<XmlNode>get(0).getName();
+                    return TextParsers.string("</").ignore()
+                            .chain(() -> TextParsers.string(name).trim(true))
+                            .chain(() -> TextParsers.string(">").ignore())
+                            .ignore();
+                }).map(values -> {
+        ...
+    }
+
     @Test
     public void testNode() {
         String src = "<note hello=\"world\">\n" +
@@ -136,12 +188,25 @@ see [JsonPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/j
                 .build());
         assert result1.isSuccess();
     }
+
 ```
 see [XmlPaser](https://github.com/janlely/jparser/blob/main/src/main/java/org/jay/parser/impl/xml/XmlParser.java)
 
 
 ## Sample Usage: implement a Regex parser
 ```java
+
+    public Parser parser() {
+        return Parser.choose(
+                () -> many(),
+                () -> some(),
+                () -> range(),
+                () -> repeat(),
+                () -> optional(),
+                () -> validToken()
+        ).many().map(s -> {
+        ...
+    }
 
     @Test
     public void testMatch() {
