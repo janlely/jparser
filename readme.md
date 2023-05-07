@@ -31,42 +31,42 @@
 ```
 
 ## basic parsers
-```java
-ByteParsers::satisfy //Parse a byte based on a condition.
-ByteParsers::any //Parse any byte
-ByteParsers::one //Parse a specified byte
-ByteParsers::take //Parse N arbitrary bytes.
+```haskell
+ByteParsers::satisfy //parse a byte based on a condition.
+ByteParsers::any //parse any byte
+ByteParsers::one //parse a specified byte
+ByteParsers::take //parse N arbitrary bytes.
 ByteParsers::skip //skip N arbitrary bytes.
-ByteParsers::takeWhile //Parse any number of bytes that meet a certain condition.
+ByteParsers::takeWhile //parse any number of bytes that meet a certain condition.
 ByteParsers::skipWhile //skip any number of bytes that meet a certain condition.
 
-TextParsers::satisfy //Parse a character that satisfies a condition according to the given encoding.
-TextParsers::one //Parse a character according to the given encoding
-TextParsers::string //Parse a given string according to the given encoding.
-TextParsers::any //Parse any n characters according to the specified encoding.
-TextParsers::take //Parse any n characters according to the specified encoding.
-TextParsers::takeWhile //Parse characters that satisfy a condition according to the given encoding and return a string.
-TextParsers::skip //Skip n characters of the given encoding.
-TextParsers::skipWhile //Skip characters that satisfy a condition according to the given encoding
+TextParsers::satisfy //parse a character that satisfies a condition according to the given encoding.
+TextParsers::one //parse a character according to the given encoding
+TextParsers::string //parse a given string according to the given encoding.
+TextParsers::any //parse any n characters according to the specified encoding.
+TextParsers::take //parse any n characters according to the specified encoding.
+TextParsers::takeWhile //parse characters that satisfy a condition according to the given encoding and return a string.
+TextParsers::skip //skip n characters of the given encoding.
+TextParsers::skipWhile //skip characters that satisfy a condition according to the given encoding
 TextParsers::eof //end of line
-TextParsers::space //Parse one whitespace character, excluding newline characters.
-TextParsers::spaces //Parse whitespace characters, excluding newline characters.
-TextParsers::white //Parse one whitespace character
-TextParsers::whites //Parse whitespace characters
+TextParsers::space //parse one whitespace character, excluding newline characters.
+TextParsers::spaces //parse whitespace characters, excluding newline characters.
+TextParsers::white //parse one whitespace character
+TextParsers::whites //parse whitespace characters
 
-NumberParsers::intStr //Parse a specified integer encoded as a string.
-NumberParsers::anyIntStr //Parse a any integer encoded as a string.
-NumberParsers::intLE //Parse a specified integer encoded in little-endian format
-NumberParsers::intBE //Parse a specified integer encoded in big-endian format
-NumberParsers::longLE //Parse a specified long integer encoded in little-endian format
-NumberParsers::longBE //Parse a specified long integer encoded in big-endian format
-NumberParsers::anyIntLE //Parse any integer encoded in little-endian format
-NumberParsers::anyIntBE //Parse any integer encoded in big-endian format
-NumberParsers::anyLongLE //Parse any long integer encoded in little-endian format
-NumberParsers::andLongBE //Parse any long integer encoded in big-endian format
+NumberParsers::intStr //parse a specified integer encoded as a string.
+NumberParsers::anyIntStr //parse a any integer encoded as a string.
+NumberParsers::intLE //parse a specified integer encoded in little-endian format
+NumberParsers::intBE //parse a specified integer encoded in big-endian format
+NumberParsers::longLE //parse a specified long integer encoded in little-endian format
+NumberParsers::longBE //parse a specified long integer encoded in big-endian format
+NumberParsers::anyIntLE //parse any integer encoded in little-endian format
+NumberParsers::anyIntBE //parse any integer encoded in big-endian format
+NumberParsers::anyLongLE //parse any long integer encoded in little-endian format
+NumberParsers::andLongBE //parse any long integer encoded in big-endian format
 ```
 ## usefull combinaters
-```java
+```haskell
 Parser::chain //chain another parser
 Parser::btChain //chain another parser with backtrace enabled
 Parser::chainWith //chain another parser generator(res -> Parser)
@@ -74,15 +74,15 @@ Parser::or //if this parser failed than try another
 Parser::ignore //do parse, but ignore result
 Parser::map //do parse and map the result
 Parser::sepBy //parse multiply times seperate by another parser
-Parser::scan //Continuously reduce the input and attempt to parse it.
+Parser::scan //continuously reduce the input and attempt to parse it.
 Parser::optinal //make this parser optional
-Parser::trim //Ignore leading and trailing whitespace and attempt to parse.
+Parser::trim //ignore leading and trailing whitespace and attempt to parse.
 Parser::many //parse zero or more times
 Parser::some //parse one or more times
 Parser::repeat //parse n times
 Parser::range //parse bettwen m and n times
 Parser::attempt //parse zero to n times
-Parser::must //Add a predicate on the result.
+Parser::must //add a predicate on the result.
 Parser::choose //chain of Parser::or
 ```
 
