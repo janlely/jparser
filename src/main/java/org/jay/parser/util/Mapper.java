@@ -20,6 +20,7 @@ public class Mapper {
         };
     }
 
+    //List<Byte> -> byte[]
     public static Function<List, ?> toBytes() {
         return bytes -> bytes.toArray();
     }

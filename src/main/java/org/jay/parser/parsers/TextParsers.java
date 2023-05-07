@@ -119,7 +119,7 @@ public class TextParsers {
         Parser result = Parser.empty();
         for(int i = 0; i < value.length(); i++) {
             int idx = i;
-            result = result.concat(() -> one(value.charAt(idx), true));
+            result = result.chain(() -> one(value.charAt(idx), true));
         }
         return result.map(Mapper.replace(value));
     }
@@ -134,7 +134,7 @@ public class TextParsers {
         Parser result = Parser.empty();
         for(int i = 0; i < value.length(); i++) {
             int idx = i;
-            result = result.concat(() -> one(value.charAt(idx), charset));
+            result = result.chain(() -> one(value.charAt(idx), charset));
         }
         return result.map(Mapper.toStr());
     }

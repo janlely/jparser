@@ -120,11 +120,11 @@ public class CommonTest {
     public void testHelloWorld() {
         String date = "2023-05-01";
         Parser dateParser = NumberParsers.anyIntStr()
-                .concat(() -> TextParsers.one('-').ignore())
-                .concat(() -> NumberParsers.anyIntStr())
-                .concat(() -> TextParsers.one('-').ignore())
-                .concat(() -> NumberParsers.anyIntStr())
-                .concat(() -> TextParsers.eof());
+                .chain(() -> TextParsers.one('-').ignore())
+                .chain(() -> NumberParsers.anyIntStr())
+                .chain(() -> TextParsers.one('-').ignore())
+                .chain(() -> NumberParsers.anyIntStr())
+                .chain(() -> TextParsers.eof());
         Result result = dateParser.runParser(Buffer.builder().data(date.getBytes()).build());
         assert result.<Integer>get(0) == 2023;
         assert result.<Integer>get(1) == 5;

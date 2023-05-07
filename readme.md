@@ -39,9 +39,9 @@ NumberParsers::andLongBE //Parse any long integer encoded in big-endian format
 ```
 ## usefull combinaters
 ```java
-Parser::concat //concatenate another parser
-Parser::btConcat //concatenate another parser with backtrace enabled
-Parser::concatWith //concatenate another parser generator(res -> Parser)
+Parser::chain //chain another parser
+Parser::btChain //chain another parser with backtrace enabled
+Parser::chainWith //chain another parser generator(res -> Parser)
 Parser::or //if this parser failed than try another
 Parser::ignore //do parse, but ignore result
 Parser::map //do parse and map the result
@@ -55,7 +55,7 @@ Parser::repeat //parse n times
 Parser::range //parse bettwen m and n times
 Parser::attempt //parse zero to n times
 Parser::must //Add a predicate on the result.
-Parser::choose //concat of Parser::or
+Parser::choose //chain of Parser::or
 ```
 
 
@@ -65,11 +65,11 @@ Parser::choose //concat of Parser::or
     public void testHelloWorld() {
         String date = "2023-05-01";
         Parser dateParser = NumberParsers.anyIntStr()
-                .concat(() -> TextParsers.one('-').ignore())
-                .concat(() -> NumberParsers.anyIntStr())
-                .concat(() -> TextParsers.one('-').ignore())
-                .concat(() -> NumberParsers.anyIntStr())
-                .concat(() -> TextParsers.eof());
+                .chain(() -> TextParsers.one('-').ignore())
+                .chain(() -> NumberParsers.anyIntStr())
+                .chain(() -> TextParsers.one('-').ignore())
+                .chain(() -> NumberParsers.anyIntStr())
+                .chain(() -> TextParsers.eof());
         Result result = dateParser.runParser(Buffer.builder().data(date.getBytes()).build());
         assert result.<Integer>get(0) == 2023;
         assert result.<Integer>get(1) == 5;

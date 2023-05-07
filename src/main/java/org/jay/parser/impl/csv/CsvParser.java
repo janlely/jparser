@@ -18,12 +18,12 @@ public class CsvParser {
     }
 
     public static Parser fieldCase1() {
-        Parser escapeParser = TextParsers.one('"').ignore().concat(() -> TextParsers.one('"'));
+        Parser escapeParser = TextParsers.one('"').ignore().chain(() -> TextParsers.one('"'));
         return TextParsers.one('"').ignore()
-                .concat(() -> escapeParser
+                .chain(() -> escapeParser
                         .or(() -> TextParsers.satisfy(c -> !Character.isISOControl(c) && c != '"'))
                         .many().map(Mapper.toStr()))
-                .concat(() -> TextParsers.one('"').ignore());
+                .chain(() -> TextParsers.one('"').ignore());
     }
 
     public static Parser fieldCase2() {

@@ -93,8 +93,8 @@ public class BaseTests {
     @Test
     public void testConnect() {
         Parser parser = TextParsers.one('a')
-                .concat(() -> TextParsers.one('b'))
-                .concat(() -> TextParsers.one('c'));
+                .chain(() -> TextParsers.one('b'))
+                .chain(() -> TextParsers.one('c'));
         Result result = parser.runParser(Buffer.builder().data("abcd".getBytes()).build());
         assert result.isSuccess();
         assert result.<Character>get(0).equals('a');
@@ -105,7 +105,7 @@ public class BaseTests {
     @Test
     public void testBtConnect() {
         Parser parser = TextParsers.any().many()
-                .btConcat(true, () -> TextParsers.one('a'))
+                .btChain(true, () -> TextParsers.one('a'))
                 .map(Mapper.toStr());
         Result result = parser.runParser(Buffer.builder()
                 .data("abcdab".getBytes())

@@ -13,7 +13,7 @@ public class JsonParser {
      * @return
      */
     public static Parser parser() {
-        return jsonParser().concat(() -> TextParsers.eof());
+        return jsonParser().chain(() -> TextParsers.eof());
     }
 
     /**
@@ -36,8 +36,8 @@ public class JsonParser {
      */
     public static Parser arrayParser() {
         return TextParsers.one('[').ignore()
-                .concat(() -> jsonParser().sepBy(TextParsers.one(',').ignore()))
-                .concat(() -> TextParsers.one(']').ignore())
+                .chain(() -> jsonParser().sepBy(TextParsers.one(',').ignore()))
+                .chain(() -> TextParsers.one(']').ignore())
                 .map(ary -> JsonValue.builder()
                         .type(JsonType.ARRAY)
                         .value(new JsonArray().addAll(ary))
@@ -50,8 +50,8 @@ public class JsonParser {
      */
     public static Parser objectParser() {
         return TextParsers.one('{').ignore()
-                .concat(() -> membersParser())
-                .concat(() -> TextParsers.one('}').ignore());
+                .chain(() -> membersParser())
+                .chain(() -> TextParsers.one('}').ignore());
     }
 
     /**
@@ -72,8 +72,8 @@ public class JsonParser {
      */
     public static Parser memberParser() {
         return keyParser().trim(true)
-                .concat(() -> TextParsers.one(':').ignore())
-                .concat(() -> jsonParser())
+                .chain(() -> TextParsers.one(':').ignore())
+                .chain(() -> jsonParser())
                 .map((List kv) -> JsonMember.builder()
                         .key((String) kv.get(0))
                         .value((JsonValue) kv.get(1))
@@ -86,13 +86,13 @@ public class JsonParser {
      */
     public static Parser keyParser() {
         return TextParsers.one('"').ignore()
-                .concat(() -> charParser().many().map(Mapper.toStr()))
-                .concat(() -> TextParsers.one('"').ignore());
+                .chain(() -> charParser().many().map(Mapper.toStr()))
+                .chain(() -> TextParsers.one('"').ignore());
     }
 
     public static Parser charParser() {
         Parser escape = TextParsers.one('\\').ignore()
-                .concat(() -> TextParsers.one('"')
+                .chain(() -> TextParsers.one('"')
                         .or(() -> TextParsers.one('\\')));
         return escape.or(() -> TextParsers.satisfy(c -> c != '"'));
     }
