@@ -105,6 +105,7 @@ public abstract class Parser {
 
     /**
      * Connect with another parser
+     * Strict Mode
      * @param parser
      * @return
      */
@@ -132,6 +133,7 @@ public abstract class Parser {
 
     /**
      * Connect with another parser
+     * Lazy Mode
      * @param parser
      * @return
      */
@@ -488,23 +490,36 @@ public abstract class Parser {
      * @param parsers
      * @return
      */
-    public static Parser choose(Parser ...parsers) {
+    public static Parser choose(List<Supplier<Parser>> parsers) {
         Parser parser = Parser.broken();
-        for (Parser p : parsers) {
-            parser = parser.or(() -> p);
+        for (Supplier<Parser> p : parsers) {
+            parser = parser.or(p);
         }
         return parser;
     }
 
     /**
-     * choose a Parser from array of Parser
+     * chain a Parser from array of Parser
      * @param parsers
      * @return
      */
-    public static Parser choose(List<Parser> parsers) {
-        Parser parser = Parser.broken();
-        for (Parser p : parsers) {
-            parser = parser.or(() -> p);
+    public static Parser chains(Supplier<Parser> ...parsers) {
+        Parser parser = Parser.empty();
+        for (Supplier<Parser> p : parsers) {
+            parser = parser.chain(p);
+        }
+        return parser;
+    }
+
+    /**
+     * chain a Parser from array of Parser
+     * @param parsers
+     * @return
+     */
+    public static Parser chains(List<Supplier<Parser>> parsers) {
+        Parser parser = Parser.empty();
+        for (Supplier<Parser> p : parsers) {
+            parser = parser.or(p);
         }
         return parser;
     }
