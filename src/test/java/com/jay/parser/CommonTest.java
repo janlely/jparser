@@ -118,16 +118,25 @@ public class CommonTest {
 
     @Test
     public void testHelloWorld() {
-        String date = "2023-05-01";
-        Parser dateParser = NumberParsers.anyIntStr()
-                .chain(() -> TextParsers.one('-').ignore())
-                .chain(() -> NumberParsers.anyIntStr())
-                .chain(() -> TextParsers.one('-').ignore())
-                .chain(() -> NumberParsers.anyIntStr())
+        String time = "2023-05-01 12:59:59";
+        Parser timeParser = NumberParsers.anyIntStr() //year
+                .chain(() -> TextParsers.one('-').ignore()) //-
+                .chain(() -> NumberParsers.anyIntStr()) //mon
+                .chain(() -> TextParsers.one('-').ignore()) //-
+                .chain(() -> NumberParsers.anyIntStr()) //day
+                .chain(() -> TextParsers.one(' ').ignore())// ' '
+                .chain(() -> NumberParsers.anyIntStr()) //hour
+                .chain(() -> TextParsers.one(':').ignore()) // ':'
+                .chain(() -> NumberParsers.anyIntStr()) //minute
+                .chain(() -> TextParsers.one(':').ignore()) // ':'
+                .chain(() -> NumberParsers.anyIntStr()) //second
                 .chain(() -> TextParsers.eof());
-        Result result = dateParser.runParser(Buffer.builder().data(date.getBytes()).build());
+        Result result = timeParser.runParser(Buffer.builder().data(time.getBytes()).build());
         assert result.<Integer>get(0) == 2023;
         assert result.<Integer>get(1) == 5;
         assert result.<Integer>get(2) == 1;
+        assert result.<Integer>get(3) == 12;
+        assert result.<Integer>get(4) == 59;
+        assert result.<Integer>get(5) == 59;
     }
 }
