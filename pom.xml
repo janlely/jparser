@@ -99,7 +99,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/io.github.janlely/jparser</url>
+            <url>https://maven.pkg.github.com/janlely/jparser</url>
         </repository>
     </distributionManagement>
 </project>
