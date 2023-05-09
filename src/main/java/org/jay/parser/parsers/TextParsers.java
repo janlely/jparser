@@ -220,7 +220,9 @@ public class TextParsers {
 
     /**
      * Parse characters that satisfy a condition according to the given encoding and return a string.
-     * @param predicate
+     * @param predicate the predicate
+     * @param charset the charset
+     * @param desc the description
      * @return A new Parser
      */
     public static Parser takeWhile(Predicate<Character> predicate, Charset charset, String desc) {

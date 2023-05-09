@@ -103,13 +103,6 @@
             </plugin>
         </plugins>
     </build>
-<!--    <distributionManagement>-->
-<!--        <repository>-->
-<!--            <id>github</id>-->
-<!--            <name>GitHub Packages</name>-->
-<!--            <url>https://maven.pkg.github.com/janlely/jparser</url>-->
-<!--        </repository>-->
-<!--    </distributionManagement>-->
     <distributionManagement>
         <repository>
             <id>ossrh</id>

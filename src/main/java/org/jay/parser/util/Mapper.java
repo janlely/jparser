@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 public class Mapper {
 
     /**
-     * [Character] -> String
+     * [Character] -&gt; String
      * @return a mapper
      */
     public static Function<List, ?> toStr() {
@@ -16,7 +16,7 @@ public class Mapper {
     }
 
     /**
-     * [String](1)-> Int
+     * [String](1)-&gt; Int
      * @return a mapper
      */
     public static Function<List, ?> toInt() {
@@ -27,7 +27,7 @@ public class Mapper {
     }
 
     /**
-     * List&lt;Byte&gt; -> byte[]
+     * List&lt;Byte&gt; -&gt; byte[]
      * @return a mapper
      */
     public static Function<List, ?> toBytes() {
@@ -35,7 +35,7 @@ public class Mapper {
     }
 
     /**
-     * List&lg;byte[]&gt; -> char
+     * List&lg;byte[]&gt; -&gt; char
      * @param charset the charset
      * @return a mapper
      */
