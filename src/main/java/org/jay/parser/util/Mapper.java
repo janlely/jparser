@@ -35,7 +35,7 @@ public class Mapper {
     }
 
     /**
-     * List&lg;byte[]&gt; -&gt; char
+     * List&lt;byte[]&gt; -&gt; char
      * @param charset the charset
      * @return a mapper
      */

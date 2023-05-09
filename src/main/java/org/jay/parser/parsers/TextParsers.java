@@ -241,6 +241,7 @@ public class TextParsers {
     /**
      * Skip characters that satisfy a condition according to the given encoding
      * @param predicate The predicate
+     * @param desc the description
      * @return A new Parser
      */
     public static Parser skipWhile(Predicate<Character> predicate, String desc) {
@@ -260,6 +261,7 @@ public class TextParsers {
      * Skip characters that satisfy a condition and UTF-8 characters.
      * @param predicate The predicate
      * @param charset The charset
+     * @param desc the description
      * @return A new Parser
      */
     public static Parser skipWhile(Predicate<Character> predicate, Charset charset, String desc) {
