@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.jay.parser.IBuffer;
 import org.jay.parser.Parser;
 import org.jay.parser.Result;
+import org.jay.parser.parsers.TextParsers;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -75,7 +76,7 @@ public class BacktraceParser extends Parser {
                 .idx(0)
                 .best(Result.broken())
                 .build();
-        Parser headParser = this.parsers.get(head++).get();
+        Parser headParser = this.parsers.get(head++).get().chain(() -> TextParsers.eof());
         int thisHead = head;
         while(lp.idx <= buffer.remaining()) {
             IBuffer[] tmp = buffer.splitAt(lp.idx);

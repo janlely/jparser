@@ -139,7 +139,11 @@ public class RegexParser {
                     if (!groupResult.containsKey(rp.getQuoteId())) {
                         throw new InvalidRegexException("invalid group: " + rp.getQuoteId());
                     }
-                    return TextParsers.string(groupResult.get(rp.getQuoteId()));
+                    Parser base = TextParsers.string(groupResult.get(rp.getQuoteId()));
+                    if (rp.getFunc() == null) {
+                        return base;
+                    }
+                    return rp.getFunc().apply(base);
                 });
             }
             return rp.getParser();
@@ -150,13 +154,13 @@ public class RegexParser {
         if (parsers.size() == 1) {
             return parsers.get(0);
         }
-        List<Supplier<Parser>> tail = new ArrayList<>();
+        List<Supplier<Parser>> suppliers = new ArrayList<>();
         for(int i = 0; i < parsers.size(); i++) {
             int idx = i;
-            tail.add(() -> parsers.get(idx));
+            suppliers.add(() -> parsers.get(idx));
         }
 
-        BacktraceParser parser = new BacktraceParser(true, tail);
+        BacktraceParser parser = new BacktraceParser(true, suppliers);
         parser.setRunnable(() -> {
             this.finalGroup.putAll(groupResult);
         });

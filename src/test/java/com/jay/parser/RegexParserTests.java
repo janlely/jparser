@@ -111,6 +111,16 @@ public class RegexParserTests {
         assert searchResult2.get(0).equals("aabbaabb");
         assert searchResult2.get(1).equals("aa");
         assert searchResult2.get(2).equals("bb");
+
+    }
+
+    @Test
+    public void testQuote() {
+
+        RegexParser regexParser = new RegexParser();
+        regexParser.compile("(a+)(b+)\\1+\\2");
+        Optional<String> result = regexParser.match("aabbaaaaaabb");
+        assert result.isPresent();
     }
 
 }
