@@ -6,11 +6,14 @@ import org.jay.parser.util.Mapper;
 
 import java.util.List;
 
+/**
+ * Json Parser
+ */
 public class JsonParser {
 
     /**
      * jsonParser + eof
-     * @return
+     * @return The final Parser
      */
     public static Parser parser() {
         return jsonParser().chain(() -> TextParsers.eof());
@@ -18,7 +21,7 @@ public class JsonParser {
 
     /**
      * jsonParser
-     * @return
+     * @return json value Parser
      */
     public static Parser jsonParser() {
         return stringParser()
@@ -32,7 +35,7 @@ public class JsonParser {
 
     /**
      * parse json array
-     * @return
+     * @return json array Parser
      */
     public static Parser arrayParser() {
         return TextParsers.one('[').ignore()
@@ -46,7 +49,7 @@ public class JsonParser {
 
     /**
      * parse json object
-     * @return
+     * @return json object Parser
      */
     public static Parser objectParser() {
         return TextParsers.one('{').ignore()
@@ -56,7 +59,7 @@ public class JsonParser {
 
     /**
      * parse one member
-     * @return
+     * @return json members Parser
      */
     public static Parser membersParser() {
         return memberParser().sepBy(TextParsers.one(',').ignore())
@@ -68,7 +71,7 @@ public class JsonParser {
 
     /**
      * parse member of json object
-     * @return
+     * @return json member Parser
      */
     public static Parser memberParser() {
         return keyParser().trim(true)
@@ -82,7 +85,7 @@ public class JsonParser {
 
     /**
      * parse json string
-     * @return
+     * @return json key Parser
      */
     public static Parser keyParser() {
         return TextParsers.one('"').ignore()
@@ -90,6 +93,9 @@ public class JsonParser {
                 .chain(() -> TextParsers.one('"').ignore());
     }
 
+    /**
+     * @return character Parser of json key
+     */
     public static Parser charParser() {
         Parser escape = TextParsers.one('\\').ignore()
                 .chain(() -> TextParsers.one('"')
@@ -97,6 +103,9 @@ public class JsonParser {
         return escape.or(() -> TextParsers.satisfy(c -> c != '"'));
     }
 
+    /**
+     * @return key Parser composed with double quote
+     */
     public static Parser stringParser() {
         return keyParser().map(s -> JsonValue.builder()
                         .type(JsonType.STRING)
@@ -107,7 +116,7 @@ public class JsonParser {
 
     /**
      * parse json null
-     * @return
+     * @return json null Parser
      */
     public static Parser nullParser() {
         return TextParsers.string("null", true).map(__ ->
@@ -119,7 +128,7 @@ public class JsonParser {
 
     /**
      * parse json number
-     * @return
+     * @return json number Parser
      */
     public static Parser numberParser() {
         return TextParsers.satisfy(c -> Character.isDigit(c) || c == '-' || c == '.' || c == 'e')
@@ -133,7 +142,7 @@ public class JsonParser {
 
     /**
      * parse json bool
-     * @return
+     * @return json bool Parser
      */
     public static Parser boolParser() {
         Parser trueValue = TextParsers.string("true", true).map(__ ->

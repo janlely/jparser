@@ -7,12 +7,18 @@ import java.util.stream.Collectors;
 
 public class Mapper {
 
-    //[Character] -> String
+    /**
+     * [Character] -> String
+     * @return a mapper
+     */
     public static Function<List, ?> toStr() {
         return chars -> chars.stream().map(String::valueOf).collect(Collectors.joining());
     }
 
-    // [String](1)-> Int
+    /**
+     * [String](1)-> Int
+     * @return a mapper
+     */
     public static Function<List, ?> toInt() {
         return str -> {
             assert str.size() == 1;
@@ -20,18 +26,30 @@ public class Mapper {
         };
     }
 
-    //List<Byte> -> byte[]
+    /**
+     * List&lt;Byte&gt; -> byte[]
+     * @return a mapper
+     */
     public static Function<List, ?> toBytes() {
         return bytes -> bytes.toArray();
     }
 
-    //List<byte[]> -> char
+    /**
+     * List&lg;byte[]&gt; -> char
+     * @param charset the charset
+     * @return a mapper
+     */
     public static Function<List, Character> toChar(Charset charset) {
         return bytes -> (Character) bytes.stream().map(bs ->
                 CharUtil.read((byte[]) bs, charset).get()).findFirst().get();
     }
 
-    //replace parse result with given value
+    /**
+     * replace parse result with given value
+     * @param value value to replace
+     * @param <T> the type
+     * @return a mapper
+     */
     public static <T> Function<List, T> replace(T value) {
         return __ -> value;
     }

@@ -1,5 +1,31 @@
 package org.jay.parser.impl.json;
 
+/**
+ * type of json value
+ */
 public enum JsonType {
-    STRING,OBJECT,BOOL,ARRAY,NUMBER,NULL;
+    /**
+     * string
+     */
+    STRING,
+    /**
+     * object
+     */
+    OBJECT,
+    /**
+     * boolean
+     */
+    BOOL,
+    /**
+     * array
+     */
+    ARRAY,
+    /**
+     * number
+     */
+    NUMBER,
+    /**
+     * null
+     */
+    NULL;
 }

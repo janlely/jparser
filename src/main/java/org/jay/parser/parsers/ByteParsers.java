@@ -11,16 +11,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+/**
+ * Parsers to parse bytes
+ */
 public class ByteParsers {
 
+    /**
+     * Parse a specified character array.
+     * @param data bytes to be parsed
+     * @return A Parser
+     */
     public static Parser bytes(byte[] data) {
         return bytes(data, "");
     }
 
     /**
      * Parse a specified character array.
-     * @param data
-     * @return
+     * @param data bytes to be parsed
+     * @param desc the description
+     * @return A Parser
      */
     public static Parser bytes(byte[] data, String desc) {
         return new Parser(String.format("ByteParser.bytes<%s>", desc)) {
@@ -44,15 +53,15 @@ public class ByteParsers {
     /**
      *
      * Parse a byte that satisfies a condition.
-     * @param p
-     * @return
+     * @param predicate the predicate
+     * @return A new Parser
      */
-    public static Parser satisfy(Predicate<Byte> p) {
+    public static Parser satisfy(Predicate<Byte> predicate) {
         return new Parser("ByteParser.satisfy()") {
             @Override
             public Result parse(IBuffer buffer) {
                 Optional<Byte> b = buffer.head();
-                if (b.isEmpty() || !p.test(b.get())) {
+                if (b.isEmpty() || !predicate.test(b.get())) {
                     return Result.builder()
                             .errorMsg(ErrorUtil.error(buffer))
                             .build();
@@ -68,7 +77,7 @@ public class ByteParsers {
 
     /**
      * Parse any byte.
-     * @return
+     * @return A new Parser
      */
     public static Parser any() {
         return satisfy(__ -> true);
@@ -76,8 +85,8 @@ public class ByteParsers {
 
     /**
      * Parse a given byte.
-     * @param b
-     * @return
+     * @param b The byte value
+     * @return A new Parser
      */
     public static Parser one(byte b) {
         return satisfy(a -> a == b);
@@ -86,37 +95,36 @@ public class ByteParsers {
 
     /**
      * Parse n arbitrary bytes.
-     * @param n
-     * @return
+     * @param n byte counts
+     * @return A new Parser
      */
     public static Parser take(int n) {
         return any().repeat(n).map(Mapper.toBytes());
     }
 
     /**
-     * takeWhile
-     * @return
+     * @param predicate The predicate
+     * @return A new Parser
      */
-    public static Parser takeWhile(Predicate<Byte> p) {
-        return satisfy(p).many().map(Mapper.toBytes());
+    public static Parser takeWhile(Predicate<Byte> predicate) {
+        return satisfy(predicate).many().map(Mapper.toBytes());
     }
 
 
     /**
-     *
      * Skip n arbitrary bytes.
-     * @param n
-     * @return
+     * @param n byte counts
+     * @return A new Parser
      */
     public static Parser skip(int n) {
         return take(n).ignore();
     }
 
     /**
-     * skipWhile
-     * @return
+     * @param predicate The predicate
+     * @return A new Parser
      */
-    public static Parser skipWhile(Predicate<Byte> p) {
-        return satisfy(p).many().ignore();
+    public static Parser skipWhile(Predicate<Byte> predicate) {
+        return satisfy(predicate).many().ignore();
     }
 }

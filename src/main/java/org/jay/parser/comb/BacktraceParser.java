@@ -13,6 +13,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Parser with back-tracing enabled
+ */
 public class BacktraceParser extends Parser {
 
     private boolean greedy;
@@ -25,6 +28,10 @@ public class BacktraceParser extends Parser {
     @Setter
     private Runnable runnable;
 
+    /**
+     * @param greedy Greedy or Non-greedy
+     * @param parsers Parsers to chain
+     */
     public BacktraceParser(boolean greedy, Supplier<Parser> ...parsers) {
         super("BacktraceConnector", parsers[0].get().getQueue());
         this.greedy = greedy;
@@ -34,6 +41,11 @@ public class BacktraceParser extends Parser {
         this.head = 0;
     }
 
+    /**
+     * @param greedy Greedy or Non-greedy
+     * @param head The first Parser
+     * @param tail The remained Parsers
+     */
     public BacktraceParser(boolean greedy, Parser head, Supplier<Parser> ...tail) {
         super("BacktraceConnector", tail[0].get().getQueue());
         this.greedy = greedy;
@@ -45,6 +57,10 @@ public class BacktraceParser extends Parser {
     }
 
 
+    /**
+     * @param greedy Greedy or Non-greedy
+     * @param parsers Parsers to chain
+     */
     public BacktraceParser(boolean greedy, List<Supplier<Parser>> parsers) {
         super("BacktraceConnector", parsers.get(0).get().getQueue());
         this.greedy = greedy;
@@ -54,6 +70,11 @@ public class BacktraceParser extends Parser {
         this.head = 0;
     }
 
+    /**
+     * @param greedy Greedy or Non-greedy
+     * @param head The first Parser
+     * @param tail The remained Parsers
+     */
     public BacktraceParser(boolean greedy, Parser head, List<Supplier<Parser>> tail) {
         super("BacktraceConnector", tail.get(0).get().getQueue());
         this.greedy = greedy;
@@ -119,6 +140,12 @@ public class BacktraceParser extends Parser {
     }
 
 
+    /**
+     * merge two results
+     * @param left The left result
+     * @param right The right result
+     * @return A new result
+     */
     private static Result merge(Result left, Result right) {
         Result result = Result.empty();
         result.addAll(left.getResult());
@@ -128,20 +155,39 @@ public class BacktraceParser extends Parser {
         return result;
     }
 
+    /**
+     * Object when looping
+     */
     @Data
     @Builder
     public static class LoopObject {
 
+        /**
+         * index
+         */
         private int idx;
+        /**
+         * the best result
+         */
         private Result best;
+
+        /**
+         * move forward
+         */
         public void forward() {
             idx++;
         }
 
+        /**
+         * @return if is success
+         */
         public boolean isSuccess() {
             return best.isSuccess();
         }
 
+        /**
+         * @return the length of result
+         */
         public int getLen() {
             return best.getLength();
         }

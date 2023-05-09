@@ -9,22 +9,28 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+/**
+ * XMl Parser
+ */
 public class XmlParser {
+    /**
+     * @return the final Parser
+     */
     public static Parser parser() {
         return nodeParser().chain(() -> TextParsers.eof());
     }
 
     /**
      * Parse XmlNode
-     * @return
+     * @return Node Parser
      */
     public static Parser nodeParser() {
         return emptyParser().or(() -> fullParser()).trim(true);
     }
 
     /**
-     * Parse content: <tag> ${content} </tag>
-     * @return
+     * Parse content
+     * @return Content Parser
      */
     public static Parser contentParser() {
         return contentEscapeParser().or(() ->
@@ -33,8 +39,8 @@ public class XmlParser {
     }
 
     /**
-     * Parse a full xml: <tag> content or children node </tag>
-     * @return
+     * Parse a full xml
+     * @return Full XML Parser
      */
     public static Parser fullParser() {
         return headParser()
@@ -62,8 +68,8 @@ public class XmlParser {
 
 
     /**
-     * Parse head: <name prop="value">
-     * @return
+     * Parse head
+     * @return Head Parser
      */
     public static Parser headParser() {
         return TextParsers.one('<').ignore()
@@ -81,8 +87,8 @@ public class XmlParser {
 
 
     /**
-     * Parse empty tag: <name prop="value" />
-     * @return
+     * Parse empty tag
+     * @return Empty tag Parser
      */
     public static Parser emptyParser() {
         return TextParsers.one('<').ignore()
@@ -100,7 +106,7 @@ public class XmlParser {
 
     /**
      * Parse tag: use by headParser and emptyParser
-     * @return
+     * @return Tag Parser
      */
     public static Parser tagParser() {
         return nameParser()
@@ -110,7 +116,7 @@ public class XmlParser {
 
     /**
      * Parse tag name or prop name
-     * @return
+     * @return Name Parser
      */
     public static Parser nameParser() {
         return TextParsers.satisfy(validName())
@@ -119,7 +125,7 @@ public class XmlParser {
 
     /**
      * Parse XmlProp
-     * @return
+     * @return Property Parser
      */
     public static Parser propParser() {
         return nameParser()
@@ -131,7 +137,7 @@ public class XmlParser {
 
     /**
      * Parse prop value
-     * @return
+     * @return property value Parser
      */
     public static Parser propValueParser() {
         Parser singleQuote = TextParsers.one('\'').ignore()
@@ -149,7 +155,7 @@ public class XmlParser {
 
     /**
      * Parse escape character in prop value
-     * @return
+     * @return Value escape Parser
      */
     public static Parser valueEscapeParser() {
         //TODO more escape char to be added
@@ -158,7 +164,7 @@ public class XmlParser {
 
     /**
      * Parse escape character in content
-     * @return
+     * @return Content escape Parser
      */
     public static Parser contentEscapeParser() {
         return TextParsers.string("&lt;").map(Mapper.replace('<')).or(() ->
@@ -167,7 +173,7 @@ public class XmlParser {
 
     /**
      * Check if a character is allowed in XML tag names
-     * @return
+     * @return predicate of valid name
      */
     public static Predicate<Character> validName() {
         return c -> Character.isLetterOrDigit(c)

@@ -17,16 +17,29 @@ import java.util.function.Supplier;
  * This is the core class of Parser Combinator.
  */
 public abstract class Parser {
+    /**
+     * if is ignored
+     */
     protected boolean ignore = false;
+    /**
+     * label queue
+     */
     @Getter
     protected Deque<String> queue;
 
+    /**
+     * @param label the label
+     */
     public Parser(String label) {
         this.label = label;
         this.queue = new ArrayDeque<>();
         this.queue.add(label);
     }
 
+    /**
+     * @param label the label
+     * @param queue the queue
+     */
     public Parser(String label, Deque<String> queue) {
         this.label = label;
         this.queue = queue;
@@ -35,8 +48,8 @@ public abstract class Parser {
 
     /**
      * Override default label
-     * @param label
-     * @return
+     * @param label Indicate what the current parser is composed of.
+     * @return Just return this
      */
     public Parser label(String label) {
         this.label = label;
@@ -45,9 +58,15 @@ public abstract class Parser {
         return this;
     }
 
+    /**
+     * the label
+     */
     @Getter
     protected String label;
 
+    /**
+     * @return if is ignored
+     */
     public boolean isIgnore() {
         return this.ignore;
     }
@@ -55,14 +74,17 @@ public abstract class Parser {
 
     /**
      * Parse, but ignore the parsing result.
-     * @return
+     * @return Return this
      */
     public Parser ignore() {
         this.ignore = true;
-//        this.label = String.format("EG(%s)", this.label);
         return this;
     }
 
+    /**
+     * @param buffer the input
+     * @return parser result
+     */
     public Result runParser(IBuffer buffer) {
         Result result = parse(buffer);
         if (result.isError()) {
@@ -74,12 +96,18 @@ public abstract class Parser {
         }
         return result;
     }
+
+    /**
+     * The core function of a Parser
+     * @param buffer The input
+     * @return The parse result
+     */
     public abstract Result parse(IBuffer buffer);
 
     /**
      * Connect with another parser
-     * @param generator
-     * @return
+     * @param generator A function that takes the result of a previous parser and generates a new parser.
+     * @return A new parser that is composed of the specified parser.
      */
     public Parser chainWith(Function<Result, Parser> generator) {
         return new Parser(this.label + "--", this.queue) {
@@ -106,8 +134,8 @@ public abstract class Parser {
     /**
      * Connect with another parser
      * Strict Mode
-     * @param parser
-     * @return
+     * @param parser The Parser to chain
+     * @return A new parser that is composed of the specified parser.
      */
     public Parser chain(Parser parser) {
         return new Parser(this.label + "--", this.queue) {
@@ -134,8 +162,8 @@ public abstract class Parser {
     /**
      * Connect with another parser
      * Lazy Mode
-     * @param parser
-     * @return
+     * @param parser The Parser generator to chain
+     * @return A new parser that is composed of the specified parser.
      */
     public Parser chain(Supplier<Parser> parser) {
         return new Parser(this.label + "--", this.queue) {
@@ -162,15 +190,15 @@ public abstract class Parser {
 
     /**
      * Add a conditional judgment
-     * @param p
-     * @return
+     * @param predicate A requirement that the parsing result must satisfy.
+     * @return A new parser that includes this condition check.
      */
-    public Parser must(Predicate<Result> p) {
+    public Parser must(Predicate<Result> predicate) {
         return new Parser(String.format("<%s>", this.label), this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = Parser.this.runParser(buffer);
-                if (result.isSuccess() && p.test(result)) {
+                if (result.isSuccess() && predicate.test(result)) {
                     return result;
                 }
                 return Result.builder()
@@ -182,10 +210,9 @@ public abstract class Parser {
 
     /**
      * Repeat at least once
-     * @return
+     * @return A new parser that will execute the current parser one or infinite times.
      */
     public Parser some() {
-//        return connect(() -> many());
         return new Parser(this.label + "+", this.queue) {
             @Override
             public Result parse(IBuffer buffer) {
@@ -211,7 +238,7 @@ public abstract class Parser {
 
     /**
      * Repeat at least 0 times
-     * @return
+     * @return A new parser that will execute the current parser zero or infinite times.
      */
     public Parser many() {
         return new Parser(this.label + "*", this.queue) {
@@ -239,9 +266,9 @@ public abstract class Parser {
 
     /**
      * The repetition count depends on the given range
-     * @param from
-     * @param end
-     * @return
+     * @param from Minimum repetition count.
+     * @param end Maximum repetition count.
+     * @return A new parser that will execute the current parser {from} to {end} times.
      */
     public Parser range(int from, int end) {
         return repeat(from).chain(() -> attempt(end - from));
@@ -249,8 +276,8 @@ public abstract class Parser {
 
     /**
      * Perform at most n times
-     * @param n
-     * @return
+     * @param n Maximum repetition count.
+     * @return A new parser that will execute the current parser at most {n} times.
      */
     public Parser attempt(int n) {
         return new Parser(String.format("%s{0,%d}", this.label, n), this.queue) {
@@ -282,8 +309,8 @@ public abstract class Parser {
 
     /**
      * Repeat a specified number of times.
-     * @param n
-     * @return
+     * @param n Repetition count.
+     * @return A new parser that will execute the current parser {n} times.
      */
     public Parser repeat(int n) {
         return new Parser(String.format("%s{%d}", this.label, n), this.queue) {
@@ -315,8 +342,8 @@ public abstract class Parser {
 
     /**
      * Map the result to another value.
-     * @param mapper
-     * @return
+     * @param mapper The mapper
+     * @return A new parser that is composed of the mapper.
      */
     public Parser map(Function<List, ?> mapper) {
         return map(mapper, "?", "?");
@@ -324,8 +351,10 @@ public abstract class Parser {
 
     /**
      * Map the result to another value.
-     * @param mapper
-     * @return
+     * @param mapper The mapper
+     * @param from The type before mapping
+     * @param to  The type after mapping
+     * @return A new parser that is composed of the mapper.
      */
     public Parser map(Function<List, ?> mapper, String from, String to) {
         return new Parser(String.format("(%s -> %s) <$> %s", from, to, this.label), this.queue) {
@@ -343,7 +372,8 @@ public abstract class Parser {
 
     /**
      * Trim leading and trailing whitespace.
-     * @return
+     * @param includeNewline true if newline need to be trimmed
+     * @return A new Parser that is composed of the trim.
      */
     public Parser trim(boolean includeNewline) {
         if (includeNewline) {
@@ -356,8 +386,8 @@ public abstract class Parser {
 
     /**
      * Split by a specified character, the delimiter will not appear in the result.
-     * @param parser
-     * @return
+     * @param parser The separator Parser
+     * @return A new Parser that is composed of the separator.
      */
     public Parser sepBy(Parser parser) {
         return chain(() -> parser.chain(() -> this).many());
@@ -365,9 +395,9 @@ public abstract class Parser {
 
 
     /**
-     * Same as Combinater Choose
-     * @param parser
-     * @return
+     * Same as Combinator Choose
+     * @param parser A Parser generator
+     * @return A new Parser that is composed of the specific Parser generator
      */
     public Parser or(Supplier<Parser> parser) {
         return new Parser(this.label + "--?", this.queue) {
@@ -391,7 +421,7 @@ public abstract class Parser {
 
     /**
      * make this Parser optional
-     * @return
+     * @return A new Parser
      */
     public Parser optional() {
         return attempt(1);
@@ -400,7 +430,7 @@ public abstract class Parser {
 
     /**
      * Do nothing but return success
-     * @return
+     * @return A empty Parser
      */
     public static Parser empty() {
         return new Parser("TextParser.empty()") {
@@ -415,11 +445,9 @@ public abstract class Parser {
     }
 
     /**
-     * while(buffer.remaining()) {
-     *     Result result = parser.runParser(buffer);
-     * }
-     * @param stripper
-     * @return
+     * Continuously reduce the input and attempt to parse it.
+     * @param stripper The strip Parser
+     * @return A new Parser will continuously reduce the input and attempt to parse it.
      */
     public Parser scan(Supplier<Parser> stripper) {
         return new Parser(this.label + "scan", this.queue) {
@@ -441,8 +469,8 @@ public abstract class Parser {
     }
 
     /**
-     * a broken parser can never parse input
-     * @return
+     * A broken Parser can never parse input
+     * @return A Broken Parser
      */
     public static Parser broken() {
         return new Parser("Broken", new ArrayDeque<>(1)) {
@@ -455,8 +483,9 @@ public abstract class Parser {
 
     /**
      * Backtracking-enabled connect
-     * @param  parsers
-     * @return
+     * @param greedy Greedy or Non-greedy mode
+     * @param parsers Parsers to be chained
+     * @return A new Parser that is composed of the parsers
      */
     public Parser btChain(boolean greedy, List<Supplier<Parser>> parsers) {
         return new BacktraceParser(greedy, this, parsers);
@@ -465,17 +494,18 @@ public abstract class Parser {
 
     /**
      * Backtracking-enabled connect
-     * @param tail
-     * @return
+     * @param greedy Greedy or Non-greedy mode
+     * @param  parsers Parsers to be chained
+     * @return A new Parser that is composed of the parsers
      */
-    public Parser btChain(boolean greedy, Supplier<Parser> ...tail) {
-        return new BacktraceParser(greedy, this, tail);
+    public Parser btChain(boolean greedy, Supplier<Parser> ...parsers) {
+        return new BacktraceParser(greedy, this, parsers);
     }
 
     /**
      * choose a Parser from array of Parser
-     * @param parsers
-     * @return
+     * @param parsers Parsers candidates
+     * @return A new Parser that is composed of the parsers
      */
     public static Parser choose(Supplier<Parser> ...parsers) {
         Parser parser = Parser.broken();
@@ -487,8 +517,8 @@ public abstract class Parser {
 
     /**
      * choose a Parser from array of Parser
-     * @param parsers
-     * @return
+     * @param parsers Parsers candidates
+     * @return A new Parser that is composed of the parsers
      */
     public static Parser choose(List<Supplier<Parser>> parsers) {
         Parser parser = Parser.broken();
@@ -500,8 +530,8 @@ public abstract class Parser {
 
     /**
      * chain a Parser from array of Parser
-     * @param parsers
-     * @return
+     * @param parsers Parsers to be chained
+     * @return A new Parser that is composed of the parsers
      */
     public static Parser chains(Supplier<Parser> ...parsers) {
         Parser parser = Parser.empty();
@@ -513,8 +543,8 @@ public abstract class Parser {
 
     /**
      * chain a Parser from array of Parser
-     * @param parsers
-     * @return
+     * @param parsers Parsers to be chained
+     * @return A new Parser that is composed of the parsers
      */
     public static Parser chains(List<Supplier<Parser>> parsers) {
         Parser parser = Parser.empty();

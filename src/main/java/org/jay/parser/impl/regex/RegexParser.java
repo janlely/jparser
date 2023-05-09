@@ -21,13 +21,31 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/**
+ * the regex Parser
+ */
 public class RegexParser {
 
+    /**
+     * Auto-incremented group ID.
+     */
     private AtomicInteger groupId;
+    /**
+     * group result cache
+     */
     private Map<Integer, String> groupResult;
+    /**
+     * final group result
+     */
     private Map<Integer, String> finalGroup;
+    /**
+     * compiled Parser
+     */
     private Parser compiledParser;
 
+    /**
+     * constructor
+     */
     public RegexParser() {
         this.groupId = new AtomicInteger(0);
         this.groupResult = new HashMap<>();
@@ -36,7 +54,7 @@ public class RegexParser {
 
     /**
      * "x*"
-     * @return
+     * @return A new Parser
      */
     public Parser many() {
         return validToken()
@@ -47,7 +65,7 @@ public class RegexParser {
 
     /**
      * "x+"
-     * @return
+     * @return A new Parser
      */
     public Parser some() {
         return validToken()
@@ -58,7 +76,7 @@ public class RegexParser {
 
     /**
      * "x{m,n}"
-     * @return
+     * @return A new Parser
      */
     public Parser range() {
         Parser rangeParser = TextParsers.one('{').ignore()
@@ -74,7 +92,7 @@ public class RegexParser {
 
     /**
      * "x{n}"
-     * @return
+     * @return A new Parser
      */
     public Parser repeat() {
         Parser rangeParser = TextParsers.one('{').ignore()
@@ -88,7 +106,7 @@ public class RegexParser {
 
     /**
      * "x?"
-     * @return
+     * @return A new Parser
      */
     public Parser optional() {
         return validToken().chain(TextParsers.one('?').ignore())
@@ -96,16 +114,27 @@ public class RegexParser {
                         (RParser) s.get(0)));
     }
 
+    /**
+     * the '^'
+     * @return A new Parser
+     */
     public Parser start() {
         return TextParsers.one('^').map(Mapper.replace(RParser.builder().type(RParser.ParserType.START).build()));
     }
 
+    /**
+     * the '$'
+     * @return A new Parser
+     */
     public static Parser end() {
         return TextParsers.one('$')
                 .map(Mapper.replace(RParser.builder().type(RParser.ParserType.PARSER).parser(TextParsers.eof()).build()))
                 .optional();
     }
 
+    /**
+     * @return the regex Parser
+     */
     public Parser parser() {
         return Parser.choose(
                 () -> many(),
@@ -114,13 +143,15 @@ public class RegexParser {
                 () -> repeat(),
                 () -> optional(),
                 () -> validToken()
-        ).many().map(s -> {
-            return RParser.builder().parser(chainParsers(s).map(Mapper.toStr()))
-                    .type(RParser.ParserType.PARSER)
-                    .build();
-        });
+        ).many().map(s -> RParser.builder().parser(chainParsers(s).map(Mapper.toStr()))
+                .type(RParser.ParserType.PARSER)
+                .build());
     }
 
+    /**
+     * @param rParsers RParsers to chain
+     * @return Chained Parser
+     */
     private Parser chainParsers(List<RParser> rParsers) {
         List<Parser> parsers = rParsers.stream().map(rp -> {
             if (rp.getType() == RParser.ParserType.GROUP) {
@@ -168,11 +199,19 @@ public class RegexParser {
     }
 
 
+    /**
+     * clean properties
+     */
     private void clean() {
         this.groupId.set(0);
         this.groupResult.clear();
         this.finalGroup.clear();
     }
+
+    /**
+     * @param src string to be matched
+     * @return group result
+     */
     public List<String> search(String src) {
         clean();
         Optional<String> result = match(src);
@@ -192,6 +231,10 @@ public class RegexParser {
         }
         return Optional.empty();
     }
+
+    /**
+     * @param regex the regex
+     */
     public void compile(String regex) {
         Parser parserParser = start().optional()
                 .chain(() -> parser())
@@ -230,8 +273,7 @@ public class RegexParser {
     }
 
     /**
-     * escape, [], \\, (), char
-     * @return
+     * @return token Parser
      */
     public Parser validToken() {
         return Parser.choose(
@@ -269,8 +311,7 @@ public class RegexParser {
     }
 
     /**
-     * \s \S \w \W ....
-     * @return
+     * @return escape Parser
      */
     public Parser escape() {
         return Parser.choose(
@@ -294,7 +335,7 @@ public class RegexParser {
 
     /**
      * [selectors]
-     * @return
+     * @return select Parser
      */
     public static Parser select() {
         Parser range = TextParsers.satisfy(Character::isLetterOrDigit)
@@ -322,15 +363,18 @@ public class RegexParser {
     }
 
 
+    /**
+     * @return predicate of a valid character
+     */
     public Predicate<Character> validChar() {
         return ch -> !StringUtils.contains("^$+*.?{}()", ch);
     }
 
     /**
      * validToken + repeat
-     * @param token
-     * @param base
-     * @return
+     * @param token The RepeatToken
+     * @param base base Parser
+     * @return A new Parser
      */
     private RParser toRepeat(RepeatToken token, RParser base) {
         switch (token.getType()) {

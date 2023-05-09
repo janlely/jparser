@@ -6,6 +6,9 @@ import org.jay.parser.IBuffer;
 
 import java.util.Optional;
 
+/**
+ * byte array Buffer
+ */
 @Builder
 public class Buffer implements IBuffer {
     private byte[] data;
@@ -67,6 +70,9 @@ public class Buffer implements IBuffer {
         };
     }
 
+    /**
+     * ths sub-buffer
+     */
     public static class SubBuffer implements IBuffer {
 
         int start;
@@ -74,6 +80,11 @@ public class Buffer implements IBuffer {
         int p;
         byte[] data;
 
+        /**
+         * @param start start position
+         * @param end ent position
+         * @param data the data
+         */
         public SubBuffer(int start, int end, byte[] data) {
             this.data = data;
             this.start = start;

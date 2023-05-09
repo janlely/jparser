@@ -4,19 +4,35 @@ import org.jay.parser.Parser;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Mapper;
 
+/**
+ * CSV Parser
+ */
 public class CsvParser {
 
+    /**
+     * @return CSV file Parser
+     */
     public static Parser fileParser() {
         return lineParser().sepBy(TextParsers.one('\n').ignore());
     }
+
+    /**
+     * @return CSV line Parser
+     */
     public static Parser lineParser() {
         return field().sepBy(TextParsers.one(',').ignore()).trim(false);
     }
 
+    /**
+     * @return CSV field Parser
+     */
     public static Parser field() {
         return fieldCase1().or(() -> fieldCase2());
     }
 
+    /**
+     * @return field case 1
+     */
     public static Parser fieldCase1() {
         Parser escapeParser = TextParsers.one('"').ignore().chain(() -> TextParsers.one('"'));
         return TextParsers.one('"').ignore()
@@ -26,6 +42,9 @@ public class CsvParser {
                 .chain(() -> TextParsers.one('"').ignore());
     }
 
+    /**
+     * @return field case 1
+     */
     public static Parser fieldCase2() {
         return TextParsers.satisfy(c -> !Character.isISOControl(c) && c != ',')
                 .many().map(Mapper.toStr());
