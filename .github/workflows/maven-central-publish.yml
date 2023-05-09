@@ -23,10 +23,15 @@ jobs:
         distribution: 'adopt'
         java-version: '11'
         server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-        server-username: ${{ secrets.OSSRH_USERNAME }} # env variable for username in deploy
-        server-password: ${{ secrets.OSSRH_TOKEN }} # env variable for token in deploy
-        gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-        gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }} # env variable for GPG private key passphrase
+        server-username: MAVEN_USERNAME # env variable for username in deploy
+        server-password: MAVEN_PASSWORD # env variable for token in deploy
+        gpg-private-key: GPG_PRIVATE_KEY # Value of the GPG private key to import
+        gpg-passphrase: GPG_PASSPHRASE # env variable for GPG private key passphrase
 
     - name: Publish to Apache Maven Central
       run: mvn deploy
+      env:
+        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
