@@ -8,6 +8,7 @@ import org.jay.parser.util.Mapper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -54,7 +55,7 @@ public class NumberParsers {
                 bf.order(ByteOrder.BIG_ENDIAN);
                 return Result.builder()
                         .length(8)
-                        .result(List.of(bf.getLong())).build();
+                        .result(Collections.singletonList(bf.getLong())).build();
             }
         };
     }
@@ -78,7 +79,7 @@ public class NumberParsers {
                 bf.order(ByteOrder.LITTLE_ENDIAN);
                 return Result.builder()
                         .length(8)
-                        .result(List.of(bf.getLong())).build();
+                        .result(Collections.singletonList(bf.getLong())).build();
             }
         };
     }
@@ -102,7 +103,7 @@ public class NumberParsers {
                 buffer.forward(4);
                 return Result.builder()
                         .length(4)
-                        .result(List.of(bf.getInt())).build();
+                        .result(Collections.singletonList(bf.getInt())).build();
             }
         };
     }
@@ -126,7 +127,7 @@ public class NumberParsers {
                 bf.order(ByteOrder.LITTLE_ENDIAN);
                 return Result.builder()
                         .length(4)
-                        .result(List.of(bf.getInt())).build();
+                        .result(Collections.singletonList(bf.getInt())).build();
             }
         };
     }

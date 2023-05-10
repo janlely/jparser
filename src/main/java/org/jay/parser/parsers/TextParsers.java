@@ -9,6 +9,7 @@ import org.jay.parser.util.Mapper;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -90,7 +91,7 @@ public class TextParsers {
                     int len = String.valueOf(ch.get()).getBytes(charset).length;
                     buffer.forward(len);
                     return Result.builder()
-                            .result(List.of(ch.get()))
+                            .result(Collections.singletonList(ch.get()))
                             .length(len)
                             .build();
                 }

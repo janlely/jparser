@@ -1,9 +1,11 @@
 package org.jay.parser.impl.xml;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jay.parser.Parser;
 import org.jay.parser.parsers.TextParsers;
 import org.jay.parser.util.Mapper;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -177,6 +179,6 @@ public class XmlParser {
      */
     public static Predicate<Character> validName() {
         return c -> Character.isLetterOrDigit(c)
-                || Set.of('.','-','_',':').contains(c);
+                || StringUtils.contains(".-_:", c);
     }
 }

@@ -7,6 +7,7 @@ import org.jay.parser.util.ErrorUtil;
 import org.jay.parser.util.Mapper;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -44,7 +45,7 @@ public class ByteParsers {
                 buffer.forward(bs.length);
                 return Result.builder()
                         .length(data.length)
-                        .result(List.of(data))
+                        .result(Collections.singletonList(data))
                         .build();
             }
         };
@@ -61,14 +62,14 @@ public class ByteParsers {
             @Override
             public Result parse(IBuffer buffer) {
                 Optional<Byte> b = buffer.head();
-                if (b.isEmpty() || !predicate.test(b.get())) {
+                if (!b.isPresent() || !predicate.test(b.get())) {
                     return Result.builder()
                             .errorMsg(ErrorUtil.error(buffer))
                             .build();
                 }
                 buffer.forward(1);
                 return Result.builder()
-                        .result(List.of(b))
+                        .result(Collections.singletonList(b))
                         .length(1)
                         .build();
             }

@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -94,7 +95,7 @@ public class Result {
      * @param mapper the mapper
      */
     public void map(Function<List, ?> mapper) {
-        this.result = List.of(mapper.apply(this.result));
+        this.result = Collections.singletonList(mapper.apply(this.result));
     }
 
     /**
