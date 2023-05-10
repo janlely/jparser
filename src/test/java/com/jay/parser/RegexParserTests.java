@@ -66,13 +66,13 @@ public class RegexParserTests {
         result = regexParser.match("aabbc");
         assert result.isPresent();
         result = regexParser.match("aabbcc");
-        assert result.isEmpty();
+        assert !result.isPresent();
 
         regexParser.compile("^a+b+c$");
         result = regexParser.match("aabbc");
         assert result.isPresent();
         result = regexParser.match("aabbcc");
-        assert result.isEmpty();
+        assert !result.isPresent();
         result = regexParser.match("abc");
         assert result.isPresent();
         result = regexParser.match("aaaabc");
@@ -84,13 +84,13 @@ public class RegexParserTests {
         result = regexParser.match("abc");
         assert result.isPresent();
         result = regexParser.match("abcd");
-        assert result.isEmpty();
+        assert !result.isPresent();
 
         regexParser.compile(".*(abc)+d");
         result = regexParser.match("aaaabcabcd");
         assert result.isPresent();
         result = regexParser.match("aaaabcabce");
-        assert result.isEmpty();
+        assert !result.isPresent();
     }
 
     @Test

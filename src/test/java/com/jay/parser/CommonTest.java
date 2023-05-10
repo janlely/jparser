@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import java.nio.charset.CharacterCodingException;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -85,7 +86,7 @@ public class CommonTest {
     public void testDqueue() {
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         queue.add(5);
-        queue.addAll(List.of(6,7,8));
+        queue.addAll(Arrays.asList(6,7,8));
         queue.addFirst(4);
         queue.addFirst(3);
         queue.addFirst(2);

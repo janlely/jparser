@@ -21,11 +21,15 @@ public class CharUtil {
      */
     public static Optional<Character> read(byte[] bytes, Charset charset) {
         try {
+            if (bytes.length == 0 ) {
+                return Optional.empty();
+            }
             CharsetDecoder decoder = charset.newDecoder();
             ByteBuffer bf = ByteBuffer.wrap(bytes);
             CharBuffer cb = CharBuffer.allocate(1);
             decoder.decode(bf, cb, true);
-            return Optional.of(cb.flip().get(0));
+            char[] ca = (char[]) cb.flip().array();
+            return Optional.of(ca[0]);
         } catch (Exception e) {
             return Optional.empty();
         }
