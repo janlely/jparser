@@ -25,7 +25,7 @@ public class CharUtil {
             ByteBuffer bf = ByteBuffer.wrap(bytes);
             CharBuffer cb = CharBuffer.allocate(1);
             decoder.decode(bf, cb, true);
-            return Optional.of(cb.flip().charAt(0));
+            return Optional.of(cb.flip().get(0));
         } catch (Exception e) {
             return Optional.empty();
         }
