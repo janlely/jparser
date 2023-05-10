@@ -6,7 +6,7 @@
 
     <groupId>io.github.janlely</groupId>
     <artifactId>jparser</artifactId>
-    <version>1.0.0</version>
+    <version>0.9.0</version>
 
     <name>jparser</name>
     <description>haskell style Parser Combinator in implemented Java</description>
@@ -31,8 +31,8 @@
         <url>https://github.com/janlely/jparser</url>
     </scm>
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
