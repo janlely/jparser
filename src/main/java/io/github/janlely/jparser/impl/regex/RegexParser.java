@@ -242,7 +242,7 @@ public class RegexParser {
             case 1:
                 //Excluding the head(^) and tail($), scanning is required
                 BacktraceParser mainParser = (BacktraceParser) parsers.get(0).getParser();
-                mainParser.setRunnable(() -> {
+                mainParser.onResultFound(() -> {
                     this.finalGroup.putAll(groupResult);
                 });
                 this.compiledParser = mainParser.map(Mapper.toStr()).scan(() -> {
@@ -255,14 +255,14 @@ public class RegexParser {
                 //including head(^), scanning is not required
                 if (parsers.get(0).getType() == RParser.ParserType.START) {
                     mainParser = (BacktraceParser) parsers.get(1).getParser();
-                    mainParser.setRunnable(() -> {
+                    mainParser.onResultFound(() -> {
                         this.finalGroup.putAll(groupResult);
                     });
                     this.compiledParser = mainParser.map(Mapper.toStr());
                 }else {
                 //including tail($), followed by a eof() and scanning is required
                     mainParser = (BacktraceParser) parsers.get(0).getParser();
-                    mainParser.setRunnable(() -> {
+                    mainParser.onResultFound(() -> {
                         this.finalGroup.putAll(groupResult);
                     });
                     this.compiledParser = mainParser.map(Mapper.toStr()).scan(() -> {
@@ -276,7 +276,7 @@ public class RegexParser {
             case 3:
                 //including the head(^) and tail($), followed by a eof() and scanning is required
                 mainParser = (BacktraceParser) parsers.get(1).getParser();
-                mainParser.setRunnable(() -> {
+                mainParser.onResultFound(() -> {
                     this.finalGroup.putAll(groupResult);
                 });
                 this.compiledParser = mainParser.map(Mapper.toStr()).chain(() -> TextParsers.eof());
