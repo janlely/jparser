@@ -212,7 +212,7 @@ public class RegexParser {
     public List<String> search(String src) {
         clean();
         Optional<String> result = match(src);
-        if (result.isEmpty()) {
+        if (!result.isPresent()) {
             return new ArrayList<>();
         }
         this.finalGroup.put(0, result.get());
