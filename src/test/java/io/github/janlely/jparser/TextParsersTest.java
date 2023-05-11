@@ -2,7 +2,10 @@ package io.github.janlely.jparser;
 
 import io.github.janlely.jparser.parsers.TextParsers;
 import io.github.janlely.jparser.util.Buffer;
+import io.github.janlely.jparser.util.Mapper;
 import org.junit.Test;
+
+import java.awt.image.MultiPixelPackedSampleModel;
 
 public class TextParsersTest {
 
@@ -154,5 +157,19 @@ public class TextParsersTest {
                         .data("".getBytes())
                         .build());
         assert result1.isSuccess();
+    }
+
+    @Test
+    public void testOneOf() {
+        Parser parser = TextParsers.oneOf("abcd").some().map(Mapper.toStr());
+        Result result = parser.runParser(Buffer.builder().data("abcde".getBytes()).build());
+        assert result.<String>get(0).equals("abcd");
+    }
+
+    @Test
+    public void testNoneOf() {
+        Parser parser = TextParsers.noneOf("abcd").some().map(Mapper.toStr());
+        Result result = parser.runParser(Buffer.builder().data("helloabc".getBytes()).build());
+        assert result.<String>get(0).equals("hello");
     }
 }
