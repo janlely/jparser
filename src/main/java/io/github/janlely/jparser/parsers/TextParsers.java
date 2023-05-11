@@ -81,7 +81,7 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser satisfy(Predicate<Character> predicate, Charset charset, String desc) {
-        return new Parser(String.format("TextParser.satisfy<%s>", desc)) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 byte[] bytes = buffer.headN(4);
@@ -306,7 +306,7 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser eof() {
-        return new Parser("TextParser.eof()") {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 if (buffer.remaining() > 0) {

@@ -40,7 +40,7 @@ public class NumberParsers {
      * @return A new Parser
      */
     public static Parser anyLongBE() {
-        return new Parser("NumberParsers.anyLongBE()") {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(8);
@@ -65,7 +65,7 @@ public class NumberParsers {
      * @return A new Parser
      */
     public static Parser anyLongLE() {
-        return new Parser("NumberParsers.anyLongLE()") {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(8);
@@ -90,7 +90,7 @@ public class NumberParsers {
      * @return A new Parser
      */
     public static Parser anyIntBE() {
-        return new Parser("NumberParsers.anyIntBE()") {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(4);
@@ -115,7 +115,7 @@ public class NumberParsers {
      * @return A new Parser
      */
     public static Parser anyIntLE() {
-        return new Parser("NumberParsers.anyIntLE()") {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 byte[] data = buffer.headN(4);

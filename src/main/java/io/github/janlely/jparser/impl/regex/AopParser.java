@@ -21,7 +21,6 @@ public class AopParser extends Parser {
      * @param after What you want to do before parsing
      */
     public AopParser(Parser parser, Runnable before, Consumer<Result> after) {
-        super(parser.getLabel(), parser.getQueue());
         this.parser = parser;
         this.before = before;
         this.after = after;

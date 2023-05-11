@@ -4,7 +4,6 @@ import io.github.janlely.jparser.comb.BacktraceParser;
 import io.github.janlely.jparser.parsers.TextParsers;
 import lombok.Getter;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -25,43 +24,6 @@ public abstract class Parser {
      */
     @Getter
     protected Deque<String> queue;
-
-    /**
-     * @param label the label
-     */
-    public Parser(String label) {
-        this.label = label;
-        this.queue = new ArrayDeque<>();
-        this.queue.add(label);
-    }
-
-    /**
-     * @param label the label
-     * @param queue the queue
-     */
-    public Parser(String label, Deque<String> queue) {
-        this.label = label;
-        this.queue = queue;
-        this.queue.add(label);
-    }
-
-    /**
-     * Override default label
-     * @param label Indicate what the current parser is composed of.
-     * @return Just return this
-     */
-    public Parser label(String label) {
-        this.label = label;
-        this.queue.pollLast();
-        this.queue.add(label);
-        return this;
-    }
-
-    /**
-     * the label
-     */
-    @Getter
-    protected String label;
 
     /**
      * @return if is ignored
@@ -109,7 +71,7 @@ public abstract class Parser {
      * @return A new parser that is composed of the specified parser.
      */
     public Parser chainWith(Function<Result, Parser> generator) {
-        return new Parser(this.label + "--", this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result step1 = Parser.this.runParser(buffer);
@@ -137,7 +99,7 @@ public abstract class Parser {
      * @return A new parser that is composed of the specified parser.
      */
     public Parser chain(Parser parser) {
-        return new Parser(this.label + "--", this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result step1 = Parser.this.runParser(buffer);
@@ -165,7 +127,7 @@ public abstract class Parser {
      * @return A new parser that is composed of the specified parser.
      */
     public Parser chain(Supplier<Parser> parser) {
-        return new Parser(this.label + "--", this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result step1 = Parser.this.runParser(buffer);
@@ -193,7 +155,7 @@ public abstract class Parser {
      * @return A new parser that includes this condition check.
      */
     public Parser must(Predicate<Result> predicate) {
-        return new Parser(String.format("<%s>", this.label), this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = Parser.this.runParser(buffer);
@@ -217,7 +179,7 @@ public abstract class Parser {
      * @return A new parser that will execute the current parser one or infinite times.
      */
     public Parser some() {
-        return new Parser(this.label + "+", this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result tmp = Parser.this.runParser(buffer);
@@ -245,7 +207,7 @@ public abstract class Parser {
      * @return A new parser that will execute the current parser zero or infinite times.
      */
     public Parser many() {
-        return new Parser(this.label + "*", this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = Result.empty();
@@ -284,7 +246,7 @@ public abstract class Parser {
      * @return A new parser that will execute the current parser at most {n} times.
      */
     public Parser attempt(int n) {
-        return new Parser(String.format("%s{0,%d}", this.label, n), this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = Result.empty();
@@ -317,7 +279,7 @@ public abstract class Parser {
      * @return A new parser that will execute the current parser {n} times.
      */
     public Parser repeat(int n) {
-        return new Parser(String.format("%s{%d}", this.label, n), this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = Result.empty();
@@ -361,7 +323,7 @@ public abstract class Parser {
      * @return A new parser that is composed of the mapper.
      */
     public Parser map(Function<List, ?> mapper, String from, String to) {
-        return new Parser(String.format("(%s -> %s) <$> %s", from, to, this.label), this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = Parser.this.runParser(buffer);
@@ -404,7 +366,7 @@ public abstract class Parser {
      * @return A new Parser that is composed of the specific Parser generator
      */
     public Parser or(Supplier<Parser> parser) {
-        return new Parser(this.label + "--?", this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Result result = Parser.this.runParser(buffer);
@@ -438,7 +400,7 @@ public abstract class Parser {
      * @return A empty Parser
      */
     public static Parser empty() {
-        return new Parser("TextParser.empty()") {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 return Result.builder()
@@ -455,7 +417,7 @@ public abstract class Parser {
      * @return A new Parser will continuously reduce the input and attempt to parse it.
      */
     public Parser scan(Supplier<Parser> stripper) {
-        return new Parser(this.label + "scan", this.queue) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 while(buffer.remaining() > 0) {
@@ -478,7 +440,7 @@ public abstract class Parser {
      * @return A Broken Parser
      */
     public static Parser broken() {
-        return new Parser("Broken", new ArrayDeque<>(1)) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 return Result.broken();

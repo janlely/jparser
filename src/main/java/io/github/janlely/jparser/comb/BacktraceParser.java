@@ -35,7 +35,6 @@ public class BacktraceParser extends Parser {
      * @param parsers Parsers to chain
      */
     public BacktraceParser(boolean greedy, Supplier<Parser> ...parsers) {
-        super("BacktraceConnector", parsers[0].get().getQueue());
         this.greedy = greedy;
         this.parsers = new LinkedList<>();
         Collections.addAll(this.parsers, parsers);
@@ -49,7 +48,6 @@ public class BacktraceParser extends Parser {
      * @param tail The remained Parsers
      */
     public BacktraceParser(boolean greedy, Parser head, Supplier<Parser> ...tail) {
-        super("BacktraceConnector", tail[0].get().getQueue());
         this.greedy = greedy;
         this.parsers = new LinkedList<>();
         this.parsers.add(() -> head);
@@ -64,7 +62,6 @@ public class BacktraceParser extends Parser {
      * @param parsers Parsers to chain
      */
     public BacktraceParser(boolean greedy, List<Supplier<Parser>> parsers) {
-        super("BacktraceConnector", parsers.get(0).get().getQueue());
         this.greedy = greedy;
         this.parsers = new LinkedList<>();
         this.parsers.addAll(parsers);
@@ -78,7 +75,6 @@ public class BacktraceParser extends Parser {
      * @param tail The remained Parsers
      */
     public BacktraceParser(boolean greedy, Parser head, List<Supplier<Parser>> tail) {
-        super("BacktraceConnector", tail.get(0).get().getQueue());
         this.greedy = greedy;
         this.parsers = new LinkedList<>();
         this.parsers.add(() -> head);

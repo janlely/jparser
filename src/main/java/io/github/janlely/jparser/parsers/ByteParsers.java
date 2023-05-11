@@ -32,7 +32,7 @@ public class ByteParsers {
      * @return A Parser
      */
     public static Parser bytes(byte[] data, String desc) {
-        return new Parser(String.format("ByteParser.bytes<%s>", desc)) {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 byte[] bs = buffer.headN(data.length);
@@ -58,7 +58,7 @@ public class ByteParsers {
      * @return A new Parser
      */
     public static Parser satisfy(Predicate<Byte> predicate) {
-        return new Parser("ByteParser.satisfy()") {
+        return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
                 Optional<Byte> b = buffer.head();
