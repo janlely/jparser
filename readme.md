@@ -6,7 +6,7 @@
 ```xml
 <dependency>
   <groupId>io.github.janlely</groupId>
-  <artifactId>brick-core</artifactId>
+  <artifactId>jparser</artifactId>
   <version>1.0.1</version> <!-- for jdk11+ -->
   <version>0.9.1</version> <!-- for jdk8 -->
 </dependency>
