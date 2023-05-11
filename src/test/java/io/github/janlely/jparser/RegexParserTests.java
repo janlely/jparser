@@ -122,5 +122,14 @@ public class RegexParserTests {
         Optional<String> result = regexParser.match("aabbaaaaaabb");
         assert result.isPresent();
     }
+    @Test
+    public void testGroup2() {
+        RegexParser regexParser = new RegexParser();
+        regexParser.compile("(.*)(abc)+\\1\\2");
+        List<String> result = regexParser.search("xxxabcxxxabc");
+        assert result.get(0).equals("xxxabcxxxabc");
+        assert result.get(1).equals("xxx");
+        assert result.get(2).equals("abc");
 
+    }
 }
