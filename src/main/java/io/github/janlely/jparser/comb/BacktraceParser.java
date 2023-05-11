@@ -25,8 +25,10 @@ public class BacktraceParser extends Parser {
     /**
      * Try executing when a better result is found in greedy mode.
      */
-    @Setter
     private Runnable runnable;
+    public void onResultFound(Runnable runnable) {
+        this.runnable = runnable;
+    }
 
     /**
      * @param greedy Greedy or Non-greedy
