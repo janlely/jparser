@@ -87,11 +87,11 @@ public class BacktraceParser extends Parser {
 
     @Override
     public Result parse(IBuffer buffer) {
-        if (head == this.parsers.size()) {
-            head = 0;
-        }
         if (head == this.parsers.size() - 1) {
             return this.parsers.get(head++).get().runParser(buffer);
+        }
+        if (head == this.parsers.size()) {
+            head = 0;
         }
         LoopObject lp = LoopObject.builder()
                 .idx(0)
