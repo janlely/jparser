@@ -2,6 +2,16 @@
 
 # Haskell style Parser Combinater implemented in Java
 
+## Maven
+```xml
+<dependency>
+  <groupId>io.github.janlely</groupId>
+  <artifactId>brick-core</artifactId>
+  <version>1.0.1</version> <!-- for jdk11+ -->
+  <version>0.9.1</version> <!-- for jdk8 -->
+</dependency>
+```
+
 ## hello world
 ```java
 
