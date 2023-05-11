@@ -6,6 +6,7 @@ import io.github.janlely.jparser.Parser;
 import io.github.janlely.jparser.Result;
 import io.github.janlely.jparser.util.CharUtil;
 import io.github.janlely.jparser.util.Mapper;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -55,32 +56,55 @@ public class TextParsers {
     }
 
     /**
-     * Parse a character that satisfies a condition , using UTF-8 encoding.
-     * @param predicate The predicate
+     * @param str the set of char
+     * @param charset the charset
      * @return A new Parser
      */
-    public static Parser satisfy(Predicate<Character> predicate) {
-        return satisfy(predicate, StandardCharsets.UTF_8, "");
+    public static Parser oneOf(String str, Charset charset) {
+        return satisfy(c -> StringUtils.contains(str, c), charset);
+    }
+
+    /**
+     * @param str the set of char
+     * @return A new Parser
+     */
+    public static Parser oneOf(String str) {
+        return satisfy(c -> StringUtils.contains(str, c));
+    }
+
+    /**
+     * @param str the set of char
+     * @param charset the charset
+     * @return A new Parser
+     */
+    public static Parser noneOf(String str, Charset charset) {
+        return satisfy(c -> !StringUtils.contains(str,c), charset);
+    }
+
+    /**
+     * @param str the set of char
+     * @return A new Parser
+     */
+    public static Parser noneOf(String str) {
+        return satisfy(c -> !StringUtils.contains(str,c));
     }
 
     /**
      * Parse a character that satisfies a condition , using UTF-8 encoding.
      * @param predicate The predicate
-     * @param desc  The description
      * @return A new Parser
      */
-    public static Parser satisfy(Predicate<Character> predicate, String desc) {
-        return satisfy(predicate, StandardCharsets.UTF_8, desc);
+    public static Parser satisfy(Predicate<Character> predicate) {
+        return satisfy(predicate, StandardCharsets.UTF_8);
     }
 
     /**
      * Parse a character that satisfies a condition according to the given encoding.
      * @param predicate The predicate
      * @param charset The charset
-     * @param desc The description
      * @return A new Parser
      */
-    public static Parser satisfy(Predicate<Character> predicate, Charset charset, String desc) {
+    public static Parser satisfy(Predicate<Character> predicate, Charset charset) {
         return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {
@@ -159,7 +183,7 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser any(Charset charset) {
-        return satisfy(__ -> true, charset, String.format("any char of %s", charset.name()));
+        return satisfy(__ -> true, charset);
     }
 
     /**
@@ -207,27 +231,17 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser takeWhile(Predicate<Character> predicate) {
-        return takeWhile(predicate, "");
-    }
-
-    /**
-     * @param predicate The predicate
-     * @param desc The description
-     * @return A new Parser
-     */
-    public static Parser takeWhile(Predicate<Character> predicate, String desc) {
-        return takeWhile(predicate, StandardCharsets.UTF_8, desc);
+        return takeWhile(predicate, StandardCharsets.UTF_8);
     }
 
     /**
      * Parse characters that satisfy a condition according to the given encoding and return a string.
      * @param predicate the predicate
      * @param charset the charset
-     * @param desc the description
      * @return A new Parser
      */
-    public static Parser takeWhile(Predicate<Character> predicate, Charset charset, String desc) {
-        return satisfy(predicate, charset, desc).many().map(Mapper.toStr());
+    public static Parser takeWhile(Predicate<Character> predicate, Charset charset) {
+        return satisfy(predicate, charset).many().map(Mapper.toStr());
     }
 
     /**
@@ -236,18 +250,9 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser skipWhile(Predicate<Character> predicate) {
-        return takeWhile(predicate, StandardCharsets.UTF_8, "").ignore();
+        return takeWhile(predicate, StandardCharsets.UTF_8).ignore();
     }
 
-    /**
-     * Skip characters that satisfy a condition according to the given encoding
-     * @param predicate The predicate
-     * @param desc the description
-     * @return A new Parser
-     */
-    public static Parser skipWhile(Predicate<Character> predicate, String desc) {
-        return takeWhile(predicate, StandardCharsets.UTF_8, desc).ignore();
-    }
     /**
      * Skip characters that satisfy a condition and UTF-8 characters.
      * @param predicate The predicate
@@ -255,18 +260,7 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser skipWhile(Predicate<Character> predicate, Charset charset) {
-        return takeWhile(predicate, charset, "").ignore();
-    }
-
-    /**
-     * Skip characters that satisfy a condition and UTF-8 characters.
-     * @param predicate The predicate
-     * @param charset The charset
-     * @param desc the description
-     * @return A new Parser
-     */
-    public static Parser skipWhile(Predicate<Character> predicate, Charset charset, String desc) {
-        return takeWhile(predicate, charset, desc).ignore();
+        return takeWhile(predicate, charset).ignore();
     }
 
     /**
@@ -274,7 +268,7 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser space() {
-        return satisfy(Character::isSpaceChar, "space exclude newline").ignore();
+        return satisfy(Character::isSpaceChar, StandardCharsets.UTF_8).ignore();
     }
 
     /**
@@ -290,7 +284,7 @@ public class TextParsers {
      * @return A new Parser
      */
     public static Parser white() {
-        return satisfy(Character::isWhitespace, "all white").ignore();
+        return satisfy(Character::isWhitespace).ignore();
     }
 
     /**

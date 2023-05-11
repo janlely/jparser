@@ -306,7 +306,7 @@ public class RegexParser {
                                 .type(RParser.ParserType.QUOTE)
                                 .quoteId((int) s.get(0))
                                 .build()),
-                () -> TextParsers.satisfy(validChar()).map(s -> RParser.builder()
+                () -> TextParsers.noneOf("^$+*.?{}()").map(s -> RParser.builder()
                         .type(RParser.ParserType.PARSER)
                         .parser(TextParsers.satisfy(ch -> ch == s.get(0)))
                         .build()),
@@ -374,13 +374,6 @@ public class RegexParser {
                 });
     }
 
-
-    /**
-     * @return predicate of a valid character
-     */
-    public Predicate<Character> validChar() {
-        return ch -> !StringUtils.contains("^$+*.?{}()", ch);
-    }
 
     /**
      * validToken + repeat

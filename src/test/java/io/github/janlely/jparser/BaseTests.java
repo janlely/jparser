@@ -32,19 +32,10 @@ public class BaseTests {
     @Test
     public void testMany() {
 
-//        Result result1 = TextParsers.one('a').many()
-//                .map(Mapper.toStr(), "[char]", "string")
-//                .runParser(Buffer.builder().data("aaabcd".getBytes()).build());
-//        assert result1.<String>get(0).equals("aaa");
-//        Result result2 = TextParsers.one('a').many().map(Mapper.toStr())
-//                .runParser(Buffer.builder().data("bcd".getBytes()).build());
-//        assert result2.isSuccess();
-//        assert result2.<String>get(0).equals("");
 
-        Result result3 = TextParsers.satisfy(Character::isLetter, "Character::isLetter")
+        Result result3 = TextParsers.satisfy(Character::isLetter)
                 .some().map(Mapper.toStr(), "[char]", "string")
                 .sepBy(TextParsers.one(',').ignore())
-//                .many()
                 .runParser(Buffer.builder()
                         .data("".getBytes())
                         .build());
