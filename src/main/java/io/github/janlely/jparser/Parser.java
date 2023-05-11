@@ -306,23 +306,13 @@ public abstract class Parser {
         };
     }
 
+
     /**
      * Map the result to another value.
      * @param mapper The mapper
      * @return A new parser that is composed of the mapper.
      */
     public Parser map(Function<List, ?> mapper) {
-        return map(mapper, "?", "?");
-    }
-
-    /**
-     * Map the result to another value.
-     * @param mapper The mapper
-     * @param from The type before mapping
-     * @param to  The type after mapping
-     * @return A new parser that is composed of the mapper.
-     */
-    public Parser map(Function<List, ?> mapper, String from, String to) {
         return new Parser() {
             @Override
             public Result parse(IBuffer buffer) {

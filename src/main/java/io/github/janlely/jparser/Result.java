@@ -51,11 +51,20 @@ public class Result {
 
     /**
      * @param idx the index
-     * @param <T> the type
+     * @param <T> the return type
      * @return the value at idx
      */
     public <T> T get(int idx) {
         return (T) result.get(idx);
+    }
+
+    /**
+     * @param <T> the return type
+     * @return the value at 0
+     */
+    public <T> T get() {
+        assert result.size() == 1;
+        return (T) result.get(0);
     }
 
     /**

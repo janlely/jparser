@@ -34,7 +34,7 @@ public class BaseTests {
 
 
         Result result3 = TextParsers.satisfy(Character::isLetter)
-                .some().map(Mapper.toStr(), "[char]", "string")
+                .some().map(Mapper.toStr())
                 .sepBy(TextParsers.one(',').ignore())
                 .runParser(Buffer.builder()
                         .data("".getBytes())
@@ -101,6 +101,11 @@ public class BaseTests {
                 .build());
         assert result.isSuccess();
         assert result.<String>get(0).equals("abcda");
+    }
+
+    @Test
+    public void testMap() {
+
     }
 
 }

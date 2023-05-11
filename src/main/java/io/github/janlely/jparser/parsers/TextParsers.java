@@ -52,7 +52,7 @@ public class TextParsers {
      */
     public static Parser one(char ch, Charset charset) {
         return ByteParsers.bytes(String.valueOf(ch).getBytes(charset), String.format("== '%c'", ch))
-                .map(Mapper.toChar(charset), "byte[]", "char");
+                .map(Mapper.toChar(charset));
     }
 
     /**
