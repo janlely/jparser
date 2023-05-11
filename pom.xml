@@ -6,7 +6,7 @@
 
     <groupId>io.github.janlely</groupId>
     <artifactId>jparser</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
 
     <name>jparser</name>
     <description>haskell style Parser Combinator in implemented Java</description>
