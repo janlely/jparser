@@ -45,6 +45,25 @@ public class BaseTests {
     }
 
     @Test
+    public void testManyTill() {
+        Result result = TextParsers.any().manyTill(TextParsers.string("abc"))
+                .map(Mapper.toStr())
+                .runParser(Buffer.builder().data("adcbgdueabc".getBytes()).build());
+        assert result.<String>get().equals("adcbgdue");
+
+        result = TextParsers.any().manyTill(TextParsers.string("abc"))
+                .map(Mapper.toStr())
+                .runParser(Buffer.builder().data("adcbgdueab".getBytes()).build());
+        assert result.isError();
+
+        result = TextParsers.any().manyTill(TextParsers.string("abc"))
+                .map(Mapper.toStr())
+                .runParser(Buffer.builder().data("abcbgdueab".getBytes()).build());
+        assert result.isSuccess();
+        assert result.<String>get().equals("");
+    }
+
+    @Test
     public void testOptinal() {
         Result result1 = TextParsers.one('a').optional()
                 .runParser(Buffer.builder().data("hello".getBytes()).build());

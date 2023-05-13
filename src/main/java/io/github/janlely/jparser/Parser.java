@@ -231,6 +231,41 @@ public abstract class Parser {
     }
 
     /**
+     * repeat this till parser success
+     * @param parser the stop parser
+     * @return A new Parser
+     */
+    public Parser manyTill(Parser parser) {
+        return new Parser() {
+            @Override
+            public Result parse(IBuffer buffer) {
+                int orgPos = buffer.getPos();
+                Result result = parser.runParser(buffer);
+                if (result.isSuccess()) {
+                    buffer.backward(buffer.getPos() - orgPos);
+                    return Result.empty();
+                }
+                result = Parser.this.runParser(buffer);
+                if (result.isError()) {
+                    return result;
+                }
+                Result successResult = Result.empty();
+                while (result.isSuccess()) {
+                    successResult.addAll(result.getResult());
+                    successResult.incLen(result.getLength());
+                    result = parser.runParser(buffer);
+                    if (result.isSuccess()) {
+                        return successResult;
+                    }
+                    result = Parser.this.runParser(buffer);
+                }
+                buffer.backward(buffer.getPos() - orgPos);
+                return Result.broken();
+            }
+        };
+    }
+
+    /**
      * The repetition count depends on the given range
      * @param from Minimum repetition count.
      * @param end Maximum repetition count.
