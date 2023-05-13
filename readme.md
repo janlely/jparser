@@ -2,13 +2,12 @@
 
 # Haskell style Parser Combinater implemented in Java
 
-## Maven
+## Maven (jdk11+ is required)
 ```xml
 <dependency>
   <groupId>io.github.janlely</groupId>
   <artifactId>jparser</artifactId>
-  <version>1.0.2</version> <!-- for jdk11+ -->
-  <version>0.9.2</version> <!-- for jdk8 -->
+  <version>1.0.3</version>
 </dependency>
 ```
 
