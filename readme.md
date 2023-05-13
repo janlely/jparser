@@ -51,6 +51,8 @@ ByteParsers::skipWhile //skip any number of bytes that meet a certain condition.
 
 TextParsers::satisfy //parse a character that satisfies a condition according to the given encoding.
 TextParsers::one //parse a character according to the given encoding
+TextParsers::oneOf //parse a character which is one of the given string 
+TextParsers::noneOf //parse a character which is none of the given string 
 TextParsers::string //parse a given string according to the given encoding.
 TextParsers::any //parse any n characters according to the specified encoding.
 TextParsers::take //parse any n characters according to the specified encoding.
