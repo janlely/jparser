@@ -1,12 +1,17 @@
 package io.github.janlely.jparser;
 
+import io.github.janlely.brick.core.Flow;
+import io.github.janlely.brick.core.FlowMaker;
+import io.github.janlely.brick.core.PureFunction;
 import io.github.janlely.jparser.comb.BacktraceParser;
 import io.github.janlely.jparser.parsers.TextParsers;
-import lombok.Getter;
+import io.github.janlely.jparser.util.ErrorUtil;
 
+import javax.swing.table.TableStringConverter;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -19,11 +24,6 @@ public abstract class Parser {
      * if is ignored
      */
     protected boolean ignore = false;
-    /**
-     * label queue
-     */
-    @Getter
-    protected Deque<String> queue;
 
     /**
      * @return if is ignored
@@ -179,27 +179,7 @@ public abstract class Parser {
      * @return A new parser that will execute the current parser one or infinite times.
      */
     public Parser some() {
-        return new Parser() {
-            @Override
-            public Result parse(IBuffer buffer) {
-                Result tmp = Parser.this.runParser(buffer);
-                if (tmp.isError()) {
-                    return tmp;
-                }
-                Result result = Result.empty();
-                result.length += tmp.length;
-                result.addAll(tmp.getResult());
-                while(true) {
-                    tmp = Parser.this.runParser(buffer);
-                    if (tmp.isError()) {
-                        break;
-                    }
-                    result.length += tmp.length;
-                    result.addAll(tmp.getResult());
-                }
-                return result;
-            }
-        };
+        return chain(() -> many());
     }
 
     /**
@@ -232,38 +212,42 @@ public abstract class Parser {
 
     /**
      * repeat this till parser success
-     * @param parser the stop parser
+     * @param parser the Stop-parser
      * @return A new Parser
      */
     public Parser manyTill(Parser parser) {
-        return new Parser() {
-            @Override
-            public Result parse(IBuffer buffer) {
-                int orgPos = buffer.getPos();
-                Result result = parser.runParser(buffer);
-                if (result.isSuccess()) {
-                    buffer.backward(buffer.getPos() - orgPos);
-                    return Result.empty();
-                }
-                result = Parser.this.runParser(buffer);
-                if (result.isError()) {
-                    return result;
-                }
-                Result successResult = Result.empty();
-                while (result.isSuccess()) {
-                    successResult.addAll(result.getResult());
-                    successResult.incLen(result.getLength());
-                    result = parser.runParser(buffer);
-                    if (result.isSuccess()) {
-                        return successResult;
-                    }
-                    result = Parser.this.runParser(buffer);
-                }
-                buffer.backward(buffer.getPos() - orgPos);
-                return Result.broken();
-            }
-        };
+        return manyTill(parser, false);
     }
+
+    /**
+     * repeat this till parser success
+     * @param parser the Stop-Parser
+     * @param greedy if is greedy mode
+     * @return A new Parser
+     */
+    public Parser manyTill(Parser parser, boolean greedy) {
+        return repeatTill(() -> parser, 0, Integer.MAX_VALUE, greedy, false);
+    }
+
+    /**
+     * repeat this till parser success
+     * @param parser the Stop-Parser
+     * @return A new Parser
+     */
+    public Parser someTill(Supplier<Parser> parser) {
+        return someTill(parser, false);
+    }
+
+    /**
+     * repeat this till parser success
+     * @param parser the Stop-Parser
+     * @param greedy if is greedy mode
+     * @return A new Parser
+     */
+    public Parser someTill(Supplier<Parser> parser, boolean greedy) {
+        return this.chain(() -> manyTill(parser.get(), greedy));
+    }
+
 
     /**
      * The repetition count depends on the given range
@@ -339,6 +323,98 @@ public abstract class Parser {
                 return result;
             }
         };
+    }
+
+    /**
+     * @param parser the Stop-Parser
+     * @param least repeat at least
+     * @param most repeat at most
+     * @return A new Parser
+     */
+    public Parser repeatTill(Supplier<Parser> parser, int least, int most) {
+        return repeatTill(parser, least, most, false, false);
+    }
+
+    /**
+     * @param parser the Stop-Parser
+     * @param least repeat at least
+     * @param most repeat at most
+     * @param greedy if is greedy
+     * @return A new Parser
+     */
+    public Parser repeatTill(Supplier<Parser> parser, int least, int most, boolean greedy) {
+        return repeatTill(parser, least, most, greedy, false);
+    }
+    /**
+     * @param parser the Stop-Parser
+     * @param least repeat at least
+     * @param most repeat at most
+     * @param greedy if is greedy
+     * @param keepStopResult if keep the result of Stop-Parser
+     * @return A new Parser
+     */
+    public Parser repeatTill(Supplier<Parser> parser, int least, int most, boolean greedy, boolean keepStopResult) {
+        return new Parser() {
+            @Override
+            public Result parse(IBuffer buffer) {
+                int orgPos = buffer.getPos();
+                Result repeatResult = Parser.this.repeat(least).runParser(buffer);
+                if (repeatResult.isError()) {
+                    return repeatResult;
+                }
+                Parser stopParser = parser.get();
+                Result bestLeftResult = null;
+                Result bestStopResult = null;
+                Result currentParsedResult = repeatResult.copy();
+                int n = least;
+                while (n++ <= most) {
+                    Result stopResult = stopParser.runParser(buffer);
+                    if (stopResult.isSuccess()) {
+                        if (bestLeftResult == null|| bestLeftResult.getLength() + bestStopResult.length < currentParsedResult.length + stopResult.getLength()) {
+                            bestLeftResult = currentParsedResult.copy();
+                            bestStopResult = stopResult;
+                        }
+                    }
+                    if (stopResult.isSuccess() && !greedy) {
+                        break;
+                    }
+                    if (n > most) {
+                        break;
+                    }
+                    buffer.backward(stopResult.length);
+                    Result result = Parser.this.runParser(buffer);
+                    if (result.isError()) {
+                        break;
+                    }
+                    currentParsedResult.addAll(result.getResult());
+                    currentParsedResult.incLen(result.getLength());
+                }
+                if (bestLeftResult == null) {
+                    buffer.backward(buffer.getPos() -  orgPos);
+                    return Result.builder()
+                            .pos(orgPos)
+                            .errorMsg(ErrorUtil.error(buffer))
+                            .build();
+                }
+                if (keepStopResult) {
+                    buffer.backward(buffer.getPos() - orgPos);
+                    buffer.forward(bestLeftResult.getLength() + bestStopResult.getLength());
+                    return merge(bestLeftResult, bestStopResult);
+                }
+                buffer.backward(buffer.getPos() - orgPos);
+                buffer.forward(bestLeftResult.getLength());
+                return bestLeftResult;
+            }
+        };
+    }
+
+    private static Result merge(Result left , Result right) {
+        Result result = Result.empty();
+        result.addAll(left.getResult());
+        result.addAll(right.getResult());
+        result.incLen(left.getLength());
+        result.incLen(right.getLength());
+        return result;
     }
 
 
@@ -419,6 +495,23 @@ public abstract class Parser {
         return attempt(1);
     }
 
+    /**
+     * Perform parsing, but do not consume input
+     * @return A new Parser
+     */
+    public Parser lookAhead() {
+        return new Parser() {
+            @Override
+            public Result parse(IBuffer buffer) {
+                Result result = Parser.this.runParser(buffer);
+                if (result.isError()) {
+                    return result;
+                }
+                buffer.backward(result.length);
+                return Result.empty();
+            }
+        };
+    }
 
     /**
      * Do nothing but return success
@@ -541,7 +634,7 @@ public abstract class Parser {
     public static Parser chains(List<Supplier<Parser>> parsers) {
         Parser parser = Parser.empty();
         for (Supplier<Parser> p : parsers) {
-            parser = parser.or(p);
+            parser = parser.chain(p);
         }
         return parser;
     }

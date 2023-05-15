@@ -132,4 +132,12 @@ public class Result {
                 .build();
 
     }
+
+    public Result copy() {
+        Result res = Result.empty();
+        res.addAll(this.result);
+        res.incLen(this.length);
+        return res;
+    }
+
 }
