@@ -89,8 +89,11 @@ Parser::scan //continuously reduce the input and attempt to parse it.
 Parser::optinal //make this parser optional
 Parser::trim //ignore leading and trailing whitespace and attempt to parse.
 Parser::many //parse zero or more times
+Parser::manyTill //implement with repeatTill
 Parser::some //parse one or more times
+Parser::someTill //implement with someTill
 Parser::repeat //parse n times
+Parser::repeatTill //parse several time till subparser matched
 Parser::range //parse bettwen m and n times
 Parser::attempt //parse zero to n times
 Parser::must //add a predicate on the result.
