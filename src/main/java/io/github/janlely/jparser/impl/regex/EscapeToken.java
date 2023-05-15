@@ -1,7 +1,7 @@
 package io.github.janlely.jparser.impl.regex;
 
-import lombok.Getter;
 import io.github.janlely.jparser.util.F;
+import lombok.Getter;
 
 import java.util.function.Predicate;
 

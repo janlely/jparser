@@ -1,8 +1,8 @@
 package io.github.janlely.jparser.util;
 
+import io.github.janlely.jparser.IBuffer;
 import lombok.Builder;
 import lombok.Getter;
-import io.github.janlely.jparser.IBuffer;
 
 import java.util.Optional;
 

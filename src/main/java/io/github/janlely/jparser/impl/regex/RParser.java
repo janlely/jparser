@@ -1,8 +1,8 @@
 package io.github.janlely.jparser.impl.regex;
 
+import io.github.janlely.jparser.Parser;
 import lombok.Builder;
 import lombok.Data;
-import io.github.janlely.jparser.Parser;
 
 import java.util.function.Function;
 

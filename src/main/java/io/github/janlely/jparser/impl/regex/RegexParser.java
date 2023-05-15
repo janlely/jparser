@@ -1,6 +1,5 @@
 package io.github.janlely.jparser.impl.regex;
 
-import org.apache.commons.lang3.StringUtils;
 import io.github.janlely.jparser.Parser;
 import io.github.janlely.jparser.Result;
 import io.github.janlely.jparser.comb.BacktraceParser;

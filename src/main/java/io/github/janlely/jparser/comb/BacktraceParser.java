@@ -1,12 +1,11 @@
 package io.github.janlely.jparser.comb;
 
 import io.github.janlely.jparser.IBuffer;
+import io.github.janlely.jparser.Parser;
 import io.github.janlely.jparser.Result;
 import io.github.janlely.jparser.parsers.TextParsers;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Setter;
-import io.github.janlely.jparser.Parser;
 
 import java.util.Collections;
 import java.util.LinkedList;

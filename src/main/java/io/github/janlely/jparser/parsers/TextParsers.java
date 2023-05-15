@@ -1,10 +1,10 @@
 package io.github.janlely.jparser.parsers;
 
-import io.github.janlely.jparser.util.ErrorUtil;
 import io.github.janlely.jparser.IBuffer;
 import io.github.janlely.jparser.Parser;
 import io.github.janlely.jparser.Result;
 import io.github.janlely.jparser.util.CharUtil;
+import io.github.janlely.jparser.util.ErrorUtil;
 import io.github.janlely.jparser.util.Mapper;
 import org.apache.commons.lang3.StringUtils;
 

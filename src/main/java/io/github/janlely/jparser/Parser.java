@@ -1,17 +1,11 @@
 package io.github.janlely.jparser;
 
-import io.github.janlely.brick.core.Flow;
-import io.github.janlely.brick.core.FlowMaker;
-import io.github.janlely.brick.core.PureFunction;
 import io.github.janlely.jparser.comb.BacktraceParser;
 import io.github.janlely.jparser.parsers.TextParsers;
 import io.github.janlely.jparser.util.ErrorUtil;
 
-import javax.swing.table.TableStringConverter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
