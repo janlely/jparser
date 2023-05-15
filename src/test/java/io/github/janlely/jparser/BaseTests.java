@@ -123,8 +123,27 @@ public class BaseTests {
     }
 
     @Test
-    public void testMap() {
+    public void testRepeatTill() {
+        Result result = TextParsers.any().manyTill(TextParsers.string("abc"))
+                .map(Mapper.toStr())
+                .runParser(Buffer.builder().data("xxxxabc".getBytes()).build());
+        assert result.<String>get().equals("xxxx");
 
+        result = TextParsers.any().manyTill(TextParsers.string("abc"))
+                .map(Mapper.toStr())
+                .runParser(Buffer.builder().data("abcxxxxabc".getBytes()).build());
+        assert result.<String>get().equals("");
+
+
+        result = TextParsers.any().manyTill(TextParsers.string("abc"))
+                .map(Mapper.toStr())
+                .runParser(Buffer.builder().data("xxxxabdc".getBytes()).build());
+        assert result.isError();
+
+        result = TextParsers.any().someTill(() -> TextParsers.string("abc"))
+                .map(Mapper.toStr())
+                .runParser(Buffer.builder().data("abcxxxxabc".getBytes()).build());
+        assert result.<String>get().equals("abcxxxx");
     }
 
 }
