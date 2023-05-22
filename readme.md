@@ -13,6 +13,14 @@ Just like the usage of Parser Combinator in Haskell, jparser does not generate A
 ```
 
 ## hello world: Simple Calculator
+gramma:
+```ENBF
+<expr> ::= <term> | <expr> "+" <term> | <expr> "-" <term>
+<term> ::= <factor> | <term> "*" <factor> | <term> "/" <factor>
+<factor> ::= <number> | "(" <expr> ")"
+<number> ::= <digit> | <digit> <number>
+<digit> ::= "0" | "1" | "2" | ... | "9"
+```
 ```java
 public class Calculator {
 
