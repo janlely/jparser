@@ -482,6 +482,31 @@ public abstract class Parser {
     }
 
     /**
+     * Same as Combinator Choose
+     * @param parser A Parser generator
+     * @return A new Parser that is composed of the specific Parser generator
+     */
+    public Parser or(Parser parser) {
+        return new Parser() {
+            @Override
+            public Result parse(IBuffer buffer) {
+                Result result = Parser.this.runParser(buffer);
+                if (result.isSuccess()) {
+                    return result;
+                }
+                Result result2 = parser.runParser(buffer);
+                if (result2.isSuccess()) {
+                    return result2;
+                }
+                return Result.builder()
+                        .pos(buffer.getPos())
+                        .errorMsg("No suitable Parser to choose")
+                        .build();
+            }
+        };
+    }
+
+    /**
      * make this Parser optional
      * @return A new Parser
      */
@@ -589,6 +614,19 @@ public abstract class Parser {
     public static Parser choose(Supplier<Parser> ...parsers) {
         Parser parser = Parser.broken();
         for (Supplier<Parser> p : parsers) {
+            parser = parser.or(p);
+        }
+        return parser;
+    }
+
+    /**
+     * choose a Parser from array of Parser
+     * @param parsers Parsers candidates
+     * @return A new Parser that is composed of the parsers
+     */
+    public static Parser choose(Parser ...parsers) {
+        Parser parser = Parser.broken();
+        for (Parser p : parsers) {
             parser = parser.or(p);
         }
         return parser;

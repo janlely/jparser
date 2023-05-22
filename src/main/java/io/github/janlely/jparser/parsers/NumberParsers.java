@@ -36,6 +36,17 @@ public class NumberParsers {
     }
 
     /**
+     * Parse any double encoded as a string.
+     * @return A new Parser
+     */
+    public static Parser anyDoubleStr() {
+        return TextParsers.one('-').optional().chain(NumberParsers.anyIntStr())
+                .chain(TextParsers.one('.').chain(NumberParsers::anyDoubleStr).optional())
+                .map(Mapper.toStr())
+                .map(s -> Double.parseDouble((String) s.get(0)));
+    }
+
+    /**
      * Parse an arbitrary long integer encoded in big-endian format.
      * @return A new Parser
      */

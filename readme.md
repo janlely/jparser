@@ -12,32 +12,52 @@ Just like the usage of Parser Combinator in Haskell, jparser does not generate A
 </dependency>
 ```
 
-## hello world
+## hello world: Simple Calculator
 ```java
+public class Calculator {
 
     @Test
-    public void testHelloWorld() {
-        String time = "2023-05-01 12:59:59";
-        Parser timeParser = NumberParsers.anyIntStr() //year
-                .chain(() -> TextParsers.one('-').ignore()) //-
-                .chain(() -> NumberParsers.anyIntStr()) //mon
-                .chain(() -> TextParsers.one('-').ignore()) //-
-                .chain(() -> NumberParsers.anyIntStr()) //day
-                .chain(() -> TextParsers.one(' ').ignore())// ' '
-                .chain(() -> NumberParsers.anyIntStr()) //hour
-                .chain(() -> TextParsers.one(':').ignore()) // ':'
-                .chain(() -> NumberParsers.anyIntStr()) //minute
-                .chain(() -> TextParsers.one(':').ignore()) // ':'
-                .chain(() -> NumberParsers.anyIntStr()) //second
-                .chain(() -> TextParsers.eof());
-        Result result = timeParser.runParser(Buffer.builder().data(time.getBytes()).build());
-        assert result.<Integer>get(0) == 2023;
-        assert result.<Integer>get(1) == 5;
-        assert result.<Integer>get(2) == 1;
-        assert result.<Integer>get(3) == 12;
-        assert result.<Integer>get(4) == 59;
-        assert result.<Integer>get(5) == 59;
+    public void testCalc() {
+        Result result = expr().parse(Buffer.builder().data("(1+2)*3-(4*2)".getBytes()).build());
+        assert result.<Double>get(0).compareTo(1.0) == 0;
+        result = expr().parse(Buffer.builder().data("1+2*3-(4*2)".getBytes()).build());
+        assert result.<Double>get(0).compareTo(-1.0) == 0;
     }
+
+    public Parser expr() {
+        return Parser.choose(
+                () -> term().chain(TextParsers.one('+').ignore())
+                        .chain(() -> expr()).map(s -> (double)s.get(0) + (double)s.get(1)),
+                () -> term().chain(TextParsers.one('-').ignore())
+                        .chain(() -> expr()).map(s -> (double)s.get(0) - (double)s.get(1)),
+                () -> term()
+        );
+    }
+
+    public Parser term() {
+        return Parser.choose(
+                () -> factor().chain(TextParsers.one('*').trim(false).ignore())
+                        .chain(() -> term()).map(s -> (double)s.get(0) * (double)s.get(1)),
+                () -> factor().chain(TextParsers.one('/').trim(false).ignore())
+                        .chain(() -> term()).map(s -> (double)s.get(0) / (double)s.get(1)),
+                () -> factor()
+        );
+    }
+
+    public Parser factor() {
+        return Parser.choose(
+                TextParsers.one('(').ignore()
+                        .chain(() -> expr())
+                        .chain(TextParsers.one(')').ignore()),
+                number()
+        );
+    }
+
+    public Parser number() {
+        return NumberParsers.anyDoubleStr();
+    }
+}
+
 ```
 
 ## basic parsers
