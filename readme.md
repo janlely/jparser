@@ -1,7 +1,7 @@
 # jparser
 
 # Haskell style Parser Combinater implemented in Java.
-jparser does not generate AST, so you need to use the map method to map the results to a custom class.
+Just like the usage of Parser Combinator in Haskell, jparser does not generate AST, so you need to use the map method to map the results to a custom class.
 
 ## Maven (jdk11+ is required)
 ```xml
