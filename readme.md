@@ -13,10 +13,10 @@ Just like the usage of Parser Combinator in Haskell, jparser does not generate A
 ```
 
 ## hello world: Simple Calculator
-gramma:
+gramma: Be careful not to write it as left-recursive.
 ```ENBF
-<expr> ::= <term> | <expr> "+" <term> | <expr> "-" <term>
-<term> ::= <factor> | <term> "*" <factor> | <term> "/" <factor>
+<expr> ::= <term> | <term> "+" <expr> | <term> "-" <expr>
+<term> ::= <factor> | <factor> "*" <term> | <factor> "/" <term>
 <factor> ::= <number> | "(" <expr> ")"
 <number> ::= <digit> | <digit> <number>
 <digit> ::= "0" | "1" | "2" | ... | "9"
