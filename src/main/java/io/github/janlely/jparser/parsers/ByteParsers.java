@@ -70,7 +70,7 @@ public class ByteParsers {
                 }
                 buffer.forward(1);
                 return Result.builder()
-                        .result(List.of(b))
+                        .result(List.of(b.get()))
                         .length(1)
                         .build();
             }
