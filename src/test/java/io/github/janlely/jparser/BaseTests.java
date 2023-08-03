@@ -1,8 +1,10 @@
 package io.github.janlely.jparser;
 
+import io.github.janlely.jparser.parsers.ByteParsers;
 import io.github.janlely.jparser.parsers.TextParsers;
 import io.github.janlely.jparser.util.Buffer;
 import io.github.janlely.jparser.util.Mapper;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 
 public class BaseTests {
@@ -146,4 +148,10 @@ public class BaseTests {
         assert result.<String>get().equals("abcxxxx");
     }
 
+    @Test
+    public void testBytesTake() {
+        Result result = ByteParsers.take(3)
+                .runParser(Buffer.builder().data("xxxxabc".getBytes()).build());
+        assert "xxx".equals(new String(result.<byte[]>get()));
+    }
 }

@@ -1,5 +1,7 @@
 package io.github.janlely.jparser.util;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.function.Function;
@@ -31,7 +33,8 @@ public class Mapper {
      * @return a mapper
      */
     public static Function<List, ?> toBytes() {
-        return bytes -> bytes.toArray();
+        return bytes -> (byte[]) ArrayUtils.toPrimitive(bytes.toArray(new Byte[0]));
+
     }
 
     /**
