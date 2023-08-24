@@ -6,7 +6,7 @@ Just like the usage of Parser Combinator in Haskell, jparser does not generate A
 <dependency>
   <groupId>io.github.janlely</groupId>
   <artifactId>jparser</artifactId>
-  <version>1.0.5</version>
+  <version>1.0.6</version>
 </dependency>
 ```
 
