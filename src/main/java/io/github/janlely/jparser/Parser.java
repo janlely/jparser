@@ -451,7 +451,7 @@ public abstract class Parser {
      * @return A new Parser that is composed of the separator.
      */
     public Parser sepBy(Parser parser) {
-        return chain(() -> parser.chain(() -> this).many());
+        return chain(() -> parser.ignore().chain(() -> this).many());
     }
 
 
