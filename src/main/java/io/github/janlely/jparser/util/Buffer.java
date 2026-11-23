@@ -102,7 +102,11 @@ public class Buffer implements IBuffer {
 
         @Override
         public int remaining() {
-            return this.end - this.p + 1;
+            // SubBuffer's `end` is INCLUSIVE (it points at the last valid byte), unlike
+            // the main Buffer where `end` is exclusive. This class was written that way
+            // and the fix is to keep the off-by-one behaviour consistent: remaining =
+            // (end - p + 1) when p <= end, else 0.
+            return this.p <= this.end ? (this.end - this.p + 1) : 0;
         }
 
         @Override
@@ -140,6 +144,9 @@ public class Buffer implements IBuffer {
             if (idx < 0 || idx > remaining()) {
                 throw new IndexOutOfBoundsException();
             }
+            // Split at idx: left is [p, p+idx-1] (inclusive end), right is [p+idx, end]
+            // (inclusive end). The left buffer's `end` is the last byte consumed by the
+            // split; the right buffer's `start` is the first byte not consumed.
             return new SubBuffer[] {
                     new SubBuffer(this.p, this.p + idx - 1, this.data),
                     new SubBuffer(this.p + idx, this.end, this.data)

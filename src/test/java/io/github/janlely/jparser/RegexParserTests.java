@@ -25,7 +25,10 @@ public class RegexParserTests {
         assert result.isSuccess();
         assert result.<RParser>get(0).getType() == RParser.ParserType.PARSER;
         assert result.<RParser>get(0).getParser().runParser(Buffer.builder().data("?".getBytes()).build()).isSuccess();
-        // [A-z]
+        // [A-z] – the test range spans A..Z and a..z (ASCII 65..122). Java regex
+        // semantics would make this match only A..Z and a..z, but the original
+        // implementation (and the range parser here) treats the range as a contiguous
+        // byte interval, so it also matches `[`, `\`, `]`, `^`, `_`.
         result = new RegexParser().validToken().runParser(Buffer.builder().data("[A-z]".getBytes()).build());
         assert result.isSuccess();
         assert result.<RParser>get(0).getType() == RParser.ParserType.PARSER;
@@ -37,6 +40,9 @@ public class RegexParserTests {
         assert result.<RParser>get(0).getParser().runParser(Buffer.builder().data("b".getBytes()).build()).isSuccess();
         assert result.<RParser>get(0).getParser().runParser(Buffer.builder().data("c".getBytes()).build()).isSuccess();
         assert result.<RParser>get(0).getParser().runParser(Buffer.builder().data("z".getBytes()).build()).isSuccess();
+        // Contiguous-byte-interval side effects (accepted as a known limitation):
+        assert result.<RParser>get(0).getParser().runParser(Buffer.builder().data("[".getBytes()).build()).isSuccess();
+        assert result.<RParser>get(0).getParser().runParser(Buffer.builder().data("]".getBytes()).build()).isSuccess();
         // \n
         result = new RegexParser().validToken().runParser(Buffer.builder().data("\\1".getBytes()).build());
         assert result.isSuccess();

@@ -3,6 +3,7 @@ package io.github.janlely.jparser.impl.regex;
 import io.github.janlely.jparser.Parser;
 import io.github.janlely.jparser.Result;
 import io.github.janlely.jparser.comb.BacktraceParser;
+import io.github.janlely.jparser.impl.regex.AopParser;
 import io.github.janlely.jparser.parsers.NumberParsers;
 import io.github.janlely.jparser.parsers.TextParsers;
 import io.github.janlely.jparser.util.Buffer;
@@ -19,7 +20,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 /**
  * the regex Parser
  */
@@ -240,47 +240,58 @@ public class RegexParser {
         switch (parsers.size()) {
             case 1:
                 //Excluding the head(^) and tail($), scanning is required
-                BacktraceParser mainParser = (BacktraceParser) parsers.get(0).getParser();
-                mainParser.onResultFound(() -> {
-                    this.finalGroup.putAll(groupResult);
-                });
-                this.compiledParser = mainParser.map(Mapper.toStr()).scan(() -> {
-                    this.groupResult.clear();
-                    this.groupId.set(0);
-                    return TextParsers.skip(1);
-                });
+                installBody(parsers.get(0).getParser(), /*scan=*/true, /*eof=*/false);
                 break;
             case 2:
                 //including head(^), scanning is not required
                 if (parsers.get(0).getType() == RParser.ParserType.START) {
-                    mainParser = (BacktraceParser) parsers.get(1).getParser();
-                    mainParser.onResultFound(() -> {
-                        this.finalGroup.putAll(groupResult);
-                    });
-                    this.compiledParser = mainParser.map(Mapper.toStr());
+                    installBody(parsers.get(1).getParser(), /*scan=*/false, /*eof=*/false);
                 }else {
                 //including tail($), followed by a eof() and scanning is required
-                    mainParser = (BacktraceParser) parsers.get(0).getParser();
-                    mainParser.onResultFound(() -> {
-                        this.finalGroup.putAll(groupResult);
-                    });
-                    this.compiledParser = mainParser.map(Mapper.toStr()).scan(() -> {
-                                this.groupResult.clear();
-                                this.groupId.set(0);
-                                return TextParsers.skip(1);
-                            })
-                            .chain(() -> TextParsers.eof());
+                    installBody(parsers.get(0).getParser(), /*scan=*/true, /*eof=*/true);
                 }
                 break;
             case 3:
                 //including the head(^) and tail($), followed by a eof() and scanning is required
-                mainParser = (BacktraceParser) parsers.get(1).getParser();
-                mainParser.onResultFound(() -> {
-                    this.finalGroup.putAll(groupResult);
-                });
-                this.compiledParser = mainParser.map(Mapper.toStr()).chain(() -> TextParsers.eof());
+                installBody(parsers.get(1).getParser(), /*scan=*/false, /*eof=*/true);
                 break;
         }
+    }
+
+    /**
+     * Install the compiled body parser, wrapping it with scan/eof as needed.
+     * <p>If the body is a {@link BacktraceParser} we can hook its "on result found" callback
+     * to capture group results. Otherwise (plain chain) we fall back to wrapping with an
+     * {@link AopParser} so group capture still happens without breaking on a cast.
+     *
+     * @param body  the compiled body parser (may or may not be a BacktraceParser)
+     * @param scan  if true, wrap with {@code scan(...)} (used when the regex has no '^')
+     * @param eof   if true, chain {@code eof()} at the end (used when the regex has '$')
+     */
+    private void installBody(Parser body, boolean scan, boolean eof) {
+        Parser mainParser;
+        if (body instanceof BacktraceParser) {
+            ((BacktraceParser) body).onResultFound(() -> this.finalGroup.putAll(this.groupResult));
+            mainParser = body;
+        } else {
+            // Plain chain body: wrap with an AopParser so group capture still fires.
+            AopParser wrapper = new AopParser(body,
+                    () -> {},
+                    res -> { if (res.isSuccess()) this.finalGroup.putAll(this.groupResult); });
+            mainParser = wrapper;
+        }
+        mainParser = mainParser.map(Mapper.toStr());
+        if (scan) {
+            mainParser = mainParser.scan(() -> {
+                this.groupResult.clear();
+                this.groupId.set(0);
+                return TextParsers.skip(1);
+            });
+        }
+        if (eof) {
+            mainParser = mainParser.chain(() -> TextParsers.eof());
+        }
+        this.compiledParser = mainParser;
     }
 
     /**
@@ -353,26 +364,49 @@ public class RegexParser {
                 .chain(() -> TextParsers.one('-').ignore())
                 .chain(() -> TextParsers.satisfy(Character::isLetterOrDigit))
                 .map(s -> (Predicate<Character>) character -> character >= (Character) s.get(0) && (Character) s.get(1) >= character);
-        Function<List, ?> mapper = s -> (Predicate<Character>) character -> {
-            Optional<Predicate> p = s.stream().reduce((a, b) -> (Predicate<Character>) x -> Predicate.class.cast(a).test(x) || Predicate.class.cast(b).test(x));
-            return p.get().test(character);
+        // The `mapper` combines a list of elements into a single Predicate. Each element
+        // may be either a Character (a literal produced by `Mapper.replace(...)`) or a
+        // Predicate (a range or a literal produced by `.map(...)`). We normalize every
+        // element to a Predicate first, then OR them together.
+        Function<List, ?> mapper = s -> {
+            List<Predicate<Character>> preds = new ArrayList<>();
+            for (Object el : s) {
+                if (el instanceof Predicate) {
+                    @SuppressWarnings("unchecked")
+                    Predicate<Character> p = (Predicate<Character>) el;
+                    preds.add(p);
+                } else {
+                    final Object literal = el;
+                    preds.add(c -> c.equals(literal));
+                }
+            }
+            return preds.stream()
+                    .reduce((a, b) -> c -> a.test(c) || b.test(c))
+                    .orElseThrow(() -> new IllegalStateException("empty selector"));
         };
-        return TextParsers.one('^').optional()
-                .chain(() -> Parser.choose(
+        // The class body parser: a list of one-or-more Character literals / ranges, mapped
+        // to a single combined Predicate via the inner `mapper`. The result list of this
+        // parser contains exactly ONE element: the combined Predicate.
+        Parser body = Parser.choose(
                         () -> range,
                         () -> TextParsers.string("\\[").map(Mapper.replace('[')),
                         () -> TextParsers.string("\\]").map(Mapper.replace(']')),
-                        () -> TextParsers.satisfy(F.noneOf(Character::isISOControl, ch -> ch == ']'))
+                        () -> TextParsers.string("\\\\").map(Mapper.replace('\\')),
+                        () -> TextParsers.satisfy(ch -> ch != ']' && ch != '\\' && !Character.isISOControl(ch) && ch != '^' && ch != '[' && ch != '*' && ch != '+' && ch != '?' && ch != '{' && ch != '}' && ch != '$')
                                 .map(s -> (Predicate<Character>) character -> character == s.get(0))
-                ).some().map(mapper))
-                .map(s -> {
-                    if (s.size() == 1) {
-                        return Predicate.class.cast(s.get(0));
-                    }
-                    return (Predicate<Character>) character -> !Predicate.class.cast(s.get(1)).test(character);
-                });
+                ).some().map(mapper);
+        // Detect negation ('^' prefix). If '^' is present, consume it and wrap the body
+        // predicate with a negation. Both branches produce a parser whose result list
+        // contains exactly ONE element (the final Predicate), so the caller can always
+        // read s.get(0).
+        Parser negated = TextParsers.one('^').ignore()
+                .chain(() -> body.map(pred -> {
+                    @SuppressWarnings("unchecked")
+                    Predicate<Character> p = (Predicate<Character>) pred;
+                    return (Predicate<Character>) c -> !p.test(c);
+                }));
+        return negated.or(() -> body);
     }
-
 
     /**
      * validToken + repeat

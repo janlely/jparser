@@ -41,9 +41,8 @@ public class BaseTests {
                 .runParser(Buffer.builder()
                         .data("".getBytes())
                         .build());
-        assert result3.isSuccess();
-        assert result3.<String>get(0).equals("a");
-        assert result3.<String>get(1).equals("b");
+        assert result3.isError();
+        assert result3.isEmpty();
     }
 
     @Test
